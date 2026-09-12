@@ -3,7 +3,7 @@ import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen,
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY, PENGU_OVERVIEW_OVERRIDE_KEY, SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY } from '../../storageKeys';
+import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY, PENGU_OVERVIEW_OVERRIDE_KEY, SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY, SAVED_OVERVIEW_CARDS_KEY, SAVED_CUSTOM_BACKGROUND_KEY } from '../../storageKeys';
 import { patchChatLol } from '../../utils/chatMe';
 
 const MAX_STORAGE_VALUE_LENGTH = 10000;
@@ -50,6 +50,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [resetChecks, setResetChecks] = useState<Record<string, boolean>>({
         rank: true,
+        overview: true,
         challenge: true,
         background: true,
         tokens: true,
@@ -60,8 +61,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
     const resetLabels: Record<string, string> = {
         rank: "Rank overrides",
+        overview: "Overview Cards",
         challenge: "Challenge overrides",
-        background: "Background skin",
+        background: "Background skin & custom",
         tokens: "Tokens, Title, Banner & Crest",
         icon: "Profile icon",
         status: "Status & Bio",
@@ -104,6 +106,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
     const clearAllSettings = async () => {
         const savedIconVal = resetChecks.icon ? localStorage.getItem(SAVED_ICON_KEY) : null;
+        let overviewCards: Record<string, unknown> = {};
+        try {
+            overviewCards = JSON.parse(localStorage.getItem(SAVED_OVERVIEW_CARDS_KEY) || '{}') as Record<string, unknown>;
+        } catch {
+            overviewCards = {};
+        }
 
         if (resetChecks.enforcer) {
             ALL_SAVED_KEYS.forEach(key => localStorage.removeItem(key));
@@ -112,17 +120,46 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
         if (resetChecks.rank) {
             [SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY].forEach(key => localStorage.removeItem(key));
+        }
+
+        if (resetChecks.overview) {
+            localStorage.removeItem(SAVED_OVERVIEW_CARDS_KEY);
             localStorage.removeItem(PENGU_OVERVIEW_OVERRIDE_KEY);
+        }
+
+        if (resetChecks.background) {
+            localStorage.removeItem(SAVED_CUSTOM_BACKGROUND_KEY);
+            try {
+                await invoke("clear_custom_background");
+            } catch (err) {
+                addLog(`Custom background reset skipped: ${err}`);
+            }
+        }
+
+        if (resetChecks.rank || resetChecks.overview) {
             try {
                 await invoke("save_rank_config", {
-                    tier: "NONE",
-                    division: "I",
-                    queue: "RANKED_SOLO_5x5",
-                    leaguePoints: 0,
-                    lastSeasonTier: "UNRANKED",
-                    borderTier: "AUTO",
-                    bannerTier: "AUTO",
-                    overviewEnabled: false,
+                    tier: resetChecks.rank ? "NONE" : localStorage.getItem(SAVED_RANK_TIER_KEY) || "NONE",
+                    division: resetChecks.rank ? "I" : localStorage.getItem(SAVED_RANK_DIV_KEY) || "I",
+                    queue: resetChecks.rank ? "RANKED_SOLO_5x5" : localStorage.getItem(SAVED_RANK_QUEUE_KEY) || "RANKED_SOLO_5x5",
+                    leaguePoints: resetChecks.rank ? 0 : Number(localStorage.getItem(SAVED_RANK_LP_KEY)) || 0,
+                    lastSeasonTier: resetChecks.rank ? "UNRANKED" : localStorage.getItem(SAVED_LAST_SEASON_RANK_KEY) || "UNRANKED",
+                    borderTier: resetChecks.rank ? "AUTO" : localStorage.getItem(SAVED_RANK_BORDER_KEY) || "AUTO",
+                    bannerTier: resetChecks.rank ? "AUTO" : localStorage.getItem(SAVED_RANK_BANNER_KEY) || "AUTO",
+                    honorLevel: resetChecks.overview ? "AUTO" : String(overviewCards.honorLevel || "AUTO"),
+                    masteryScore: resetChecks.overview ? "" : String(overviewCards.masteryScore || ""),
+                    masteryLevel: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel || "AUTO"),
+                    masteryLevel2: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel2 || "AUTO"),
+                    masteryLevel3: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel3 || "AUTO"),
+                    masteryChampionId: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId || "AUTO"),
+                    masteryChampionId2: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId2 || "AUTO"),
+                    masteryChampionId3: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId3 || "AUTO"),
+                    trophyTheme: resetChecks.overview ? "AUTO" : String(overviewCards.trophyTheme || "AUTO"),
+                    trophyBracket: resetChecks.overview ? 4 : Number(overviewCards.trophyBracket) || 4,
+                    trophyTier: resetChecks.overview ? 4 : Number(overviewCards.trophyTier) || 4,
+                    clashBannerTheme: resetChecks.overview ? "AUTO" : String(overviewCards.clashBannerTheme || "AUTO"),
+                    clashBannerLevel: resetChecks.overview ? 1 : Number(overviewCards.clashBannerLevel) || 1,
+                    overviewEnabled: resetChecks.overview ? false : localStorage.getItem(PENGU_OVERVIEW_OVERRIDE_KEY) !== "false",
                 });
             } catch (err) {
                 // Pengu Loader may not be installed; the LCU reset still proceeds.

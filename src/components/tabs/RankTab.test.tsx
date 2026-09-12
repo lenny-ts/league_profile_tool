@@ -47,6 +47,7 @@ describe('RankTab', () => {
         expect(rankSection).toBeDefined();
         expect(screen.queryByText('Challenge Crystal Override')).toBeNull();
         expect(screen.queryByLabelText('Challenge Points')).toBeNull();
+        expect(screen.queryByLabelText('Honor Level')).toBeNull();
         expect(props.lcuRequest).toHaveBeenCalledWith("GET", "/lol-chat/v1/me");
     });
 

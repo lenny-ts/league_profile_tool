@@ -20,7 +20,8 @@ import {
     Users,
     UserMinus,
     FolderOpen,
-    Gem
+    Gem,
+    PanelsTopLeft
 } from 'lucide-react';
 import "./App.css";
 
@@ -39,6 +40,7 @@ import HomeTab from "./components/tabs/HomeTab";
 import ProfileTab from "./components/tabs/ProfileTab";
 import MusicTab from "./components/tabs/MusicTab";
 import RankTab from "./components/tabs/RankTab";
+import OverviewTab from "./components/tabs/OverviewTab";
 import ChallengeLevelTab from "./components/tabs/ChallengeLevelTab";
 import IconTab from "./components/tabs/IconTab";
 import LogsTab from "./components/tabs/LogsTab";
@@ -220,6 +222,7 @@ function App() {
           <div className="nav-category">
             {!isCollapsed && <div className="nav-category-title">Enhancements</div>}
             <NavItem icon={<Trophy size={18} />} label="Rank Overrides" active={activeTab === 'rank'} onClick={() => setActiveTab('rank')} collapsed={isCollapsed} />
+            <NavItem icon={<PanelsTopLeft size={18} />} label="Overview Cards" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} collapsed={isCollapsed} />
             <NavItem icon={<Gem size={18} />} label="Challenge Level" active={activeTab === 'challenge'} onClick={() => setActiveTab('challenge')} collapsed={isCollapsed} />
             <NavItem icon={<Disc3 size={18} />} label="Music Sync" active={activeTab === 'music'} onClick={() => setActiveTab('music')} collapsed={isCollapsed} />
           </div>
@@ -254,6 +257,7 @@ function App() {
           {activeTab === 'tokens' && <ErrorBoundary name="Tokens"><TokensTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'presets' && <ErrorBoundary name="Presets"><PresetsTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'rank' && <ErrorBoundary name="Rank"><RankTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
+          {activeTab === 'overview' && <ErrorBoundary name="Overview Cards"><OverviewTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'challenge' && <ErrorBoundary name="Challenge Level"><ChallengeLevelTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'lobby' && <ErrorBoundary name="Lobby"><LobbyTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'icons' && <ErrorBoundary name="Icons"><IconTab lcu={lcu} showToast={showToast} addLog={addLog} {...icons} /></ErrorBoundary>}

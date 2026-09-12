@@ -3,6 +3,7 @@ export const SAVED_AVAILABILITY_KEY = "profile_saved_availability_v1";
 export const SAVED_BIO_KEY          = "profile_saved_bio_v1";
 export const SAVED_ICON_KEY         = "profile_saved_icon_v1";
 export const SAVED_BACKGROUND_KEY   = "profile_saved_background_v1";
+export const SAVED_CUSTOM_BACKGROUND_KEY = "profile_saved_custom_background_v1";
 export const SAVED_TOKENS_KEY       = "profile_saved_tokens_v1";
 export const SAVED_TITLE_KEY        = "profile_saved_title_v1";
 export const SAVED_BANNER_ACCENT_KEY = "profile_saved_banner_accent_v1";
@@ -16,6 +17,7 @@ export const SAVED_RANK_LP_KEY      = "profile_saved_rank_lp_v1";
 export const SAVED_LAST_SEASON_RANK_KEY = "profile_saved_last_season_rank_v1";
 export const SAVED_RANK_BORDER_KEY  = "profile_saved_rank_border_v1";
 export const SAVED_RANK_BANNER_KEY  = "profile_saved_rank_banner_v1";
+export const SAVED_OVERVIEW_CARDS_KEY = "profile_saved_overview_cards_v1";
 export const SAVED_CHALLENGE_CRYSTAL_KEY = "profile_saved_challenge_crystal_v1";
 export const SAVED_CHALLENGE_POINTS_KEY  = "profile_saved_challenge_points_v1";
 
@@ -47,6 +49,7 @@ export const ALL_SAVED_KEYS: string[] = [
     SAVED_BIO_KEY,
     SAVED_ICON_KEY,
     SAVED_BACKGROUND_KEY,
+    SAVED_CUSTOM_BACKGROUND_KEY,
     SAVED_TOKENS_KEY,
     SAVED_TITLE_KEY,
     SAVED_BANNER_ACCENT_KEY,
@@ -58,6 +61,7 @@ export const ALL_SAVED_KEYS: string[] = [
     SAVED_LAST_SEASON_RANK_KEY,
     SAVED_RANK_BORDER_KEY,
     SAVED_RANK_BANNER_KEY,
+    SAVED_OVERVIEW_CARDS_KEY,
     SAVED_CHALLENGE_CRYSTAL_KEY,
     SAVED_CHALLENGE_POINTS_KEY,
     SAVED_ENFORCE_OFFLINE_KEY,

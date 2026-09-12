@@ -15,7 +15,8 @@ import {
     Cpu,
     Users,
     UserMinus,
-    Gem
+    Gem,
+    PanelsTopLeft
 } from 'lucide-react';
 import { LcuInfo } from '../../hooks/useLcu';
 import { LcuRequestFn } from '../../utils/chatMe';
@@ -94,6 +95,7 @@ const HomeTab: React.FC<HomeTabProps> = ({ lcu, clientVersion, setActiveTab, lcu
             icon: <Sparkles size={24} />,
             options: [
                 { id: 'rank', title: 'Rank Overrides', desc: 'Modify visible Solo/Duo rankings.', icon: <Trophy size={24} /> },
+                { id: 'overview', title: 'Overview Cards', desc: 'Customize Honor, Mastery and Clash cards.', icon: <PanelsTopLeft size={24} /> },
                 { id: 'challenge', title: 'Challenge Level', desc: 'Customize your challenge crystal and score.', icon: <Gem size={24} /> },
                 { id: 'music', title: 'Music Sync', desc: 'Auto-update bio with your current track.', icon: <Disc3 size={24} /> },
             ]

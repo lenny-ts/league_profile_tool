@@ -10,6 +10,17 @@ var cssInjected = false
 var overviewEnabled = true
 var touchedElements = []
 var hoverApplyTimer = null
+var clashCatalogs = null
+var clashCatalogPromise = null
+var pluginStarted = false
+var xhrInstalled = false
+var socketHookInstalled = false
+var dataBindingListeners = []
+var overviewPayloadCache = {}
+var championSummary = null
+var championSummaryPromise = null
+var customBackground = null
+var customBackgroundTouched = []
 
 function log(msg) { console.log('[RankOverride] ' + msg) }
 
@@ -66,7 +77,20 @@ async function fetchDesiredRank() {
         leaguePoints: Math.max(0, parseInt(config.leaguePoints, 10) || 0),
         lastSeasonTier: config.lastSeasonTier || 'UNRANKED',
         borderTier: config.borderTier || 'AUTO',
-        bannerTier: config.bannerTier || 'AUTO'
+        bannerTier: config.bannerTier || 'AUTO',
+        honorLevel: config.honorLevel || 'AUTO',
+        masteryScore: config.masteryScore === undefined ? '' : String(config.masteryScore),
+        masteryLevel: config.masteryLevel || 'AUTO',
+        masteryLevel2: config.masteryLevel2 || 'AUTO',
+        masteryLevel3: config.masteryLevel3 || 'AUTO',
+        masteryChampionId: config.masteryChampionId || 'AUTO',
+        masteryChampionId2: config.masteryChampionId2 || 'AUTO',
+        masteryChampionId3: config.masteryChampionId3 || 'AUTO',
+        trophyTheme: config.trophyTheme || 'AUTO',
+        trophyBracket: parseInt(config.trophyBracket, 10) || 4,
+        trophyTier: parseInt(config.trophyTier, 10) || 4,
+        clashBannerTheme: config.clashBannerTheme || 'AUTO',
+        clashBannerLevel: parseInt(config.clashBannerLevel, 10) || 1
       }
     }
   } catch (e) {}
@@ -85,7 +109,20 @@ async function fetchDesiredRank() {
         leaguePoints: 0,
         lastSeasonTier: 'UNRANKED',
         borderTier: 'AUTO',
-        bannerTier: 'AUTO'
+        bannerTier: 'AUTO',
+        honorLevel: 'AUTO',
+        masteryScore: '',
+        masteryLevel: 'AUTO',
+        masteryLevel2: 'AUTO',
+        masteryLevel3: 'AUTO',
+        masteryChampionId: 'AUTO',
+        masteryChampionId2: 'AUTO',
+        masteryChampionId3: 'AUTO',
+        trophyTheme: 'AUTO',
+        trophyBracket: 4,
+        trophyTier: 4,
+        clashBannerTheme: 'AUTO',
+        clashBannerLevel: 1
       }
     }
     return null
@@ -200,6 +237,22 @@ async function fetchOverviewSetting() {
   } catch (e) { return true }
 }
 
+async function fetchCustomBackground() {
+  try {
+    var res = await fetch('//plugins/rank-override/custom-background.json?t=' + Date.now(), { cache: 'no-store' })
+    if (!res.ok) return null
+    var config = await res.json()
+    if (!config.enabled || !/^assets\/custom-background\.(png|jpe?g|webp|gif)$/i.test(config.asset || '')) return null
+    return {
+      asset: config.asset,
+      fit: config.fit === 'contain' ? 'contain' : 'cover',
+      position: /^(center|top|bottom|left|right)$/.test(config.position || '') ? config.position : 'center',
+      dim: Math.min(80, Math.max(0, parseInt(config.dim, 10) || 0)),
+      version: String(config.version || '')
+    }
+  } catch (e) { return null }
+}
+
 function queryAllDeep(root, selector) {
   var results = Array.prototype.slice.call(root.querySelectorAll(selector))
   var elements = root.querySelectorAll('*')
@@ -209,6 +262,115 @@ function queryAllDeep(root, selector) {
     }
   }
   return results
+}
+
+function rememberCustomBackgroundElement(element) {
+  if (!element || element._customBackgroundOriginal) return
+  element._customBackgroundOriginal = {
+    src: element.getAttribute('src'),
+    srcset: element.getAttribute('srcset'),
+    backgroundImage: element.style.backgroundImage,
+    backgroundSize: element.style.backgroundSize,
+    backgroundPosition: element.style.backgroundPosition,
+    backgroundRepeat: element.style.backgroundRepeat,
+    width: element.style.width,
+    height: element.style.height,
+    maxWidth: element.style.maxWidth,
+    maxHeight: element.style.maxHeight,
+    display: element.style.display,
+    objectFit: element.style.objectFit,
+    objectPosition: element.style.objectPosition,
+    imageRendering: element.style.imageRendering,
+    filter: element.style.filter,
+    opacity: element.style.opacity
+  }
+  customBackgroundTouched.push(element)
+}
+
+function clearCustomBackgroundElements() {
+  for (var i = 0; i < customBackgroundTouched.length; i++) {
+    var element = customBackgroundTouched[i]
+    var original = element._customBackgroundOriginal
+    if (!original) continue
+    if (original.src === null) element.removeAttribute('src'); else element.setAttribute('src', original.src)
+    if (original.srcset === null) element.removeAttribute('srcset'); else element.setAttribute('srcset', original.srcset)
+    element.style.backgroundImage = original.backgroundImage
+    element.style.backgroundSize = original.backgroundSize
+    element.style.backgroundPosition = original.backgroundPosition
+    element.style.backgroundRepeat = original.backgroundRepeat
+    element.style.width = original.width
+    element.style.height = original.height
+    element.style.maxWidth = original.maxWidth
+    element.style.maxHeight = original.maxHeight
+    element.style.display = original.display
+    element.style.objectFit = original.objectFit
+    element.style.objectPosition = original.objectPosition
+    element.style.imageRendering = original.imageRendering
+    element.style.filter = original.filter
+    element.style.opacity = original.opacity
+    delete element._customBackgroundOriginal
+  }
+  customBackgroundTouched = []
+}
+
+function applyCustomBackground() {
+  if (!customBackground) {
+    if (customBackgroundTouched.length) clearCustomBackgroundElements()
+    return
+  }
+  var url = '//plugins/rank-override/' + customBackground.asset + '?v=' + customBackground.version
+  var brightness = Math.max(0.2, 1 - customBackground.dim / 100)
+  var backgrounds = queryAllDeep(document,
+    '.style-profile-background-image img, .style-profile-masked-image img, ' +
+    '.style-profile-skin-background-image, .profile-skin-background-image, ' +
+    '.style-profile-skin-background-component img, .profile-skin-background-component img, ' +
+    '[class*="profile-skin-background"] img, lol-uikit-parallax-background img')
+  for (var i = 0; i < backgrounds.length; i++) {
+    var image = backgrounds[i]
+    rememberCustomBackgroundElement(image)
+    if (image.getAttribute('src') !== url) image.setAttribute('src', url)
+    image.removeAttribute('srcset')
+    image.style.width = '100%'
+    image.style.height = '100%'
+    image.style.maxWidth = 'none'
+    image.style.maxHeight = 'none'
+    image.style.display = 'block'
+    image.style.objectFit = customBackground.fit
+    image.style.objectPosition = customBackground.position
+    image.style.imageRendering = 'auto'
+    image.style.filter = 'brightness(' + brightness + ')'
+  }
+  // Some profile components expose both an image and its parent as background
+  // surfaces. Painting both makes animated assets visibly render twice.
+  if (!backgrounds.length) {
+    var containers = queryAllDeep(document,
+      '.style-profile-background-image, .style-profile-masked-image, ' +
+      '.style-profile-skin-background-component, .profile-skin-background-component, [class*="profile-skin-background-component"]')
+    for (var c = 0; c < containers.length; c++) {
+      var container = containers[c]
+      rememberCustomBackgroundElement(container)
+      container.style.backgroundImage = 'linear-gradient(rgba(0,0,0,' + customBackground.dim / 100 + '), rgba(0,0,0,' + customBackground.dim / 100 + ')), url("' + url + '")'
+      container.style.backgroundSize = customBackground.fit
+      container.style.backgroundPosition = customBackground.position
+      container.style.backgroundRepeat = 'no-repeat'
+    }
+  }
+  var videos = queryAllDeep(document,
+    '.style-profile-skin-background-component video, .profile-skin-background-component video, [class*="profile-skin-background"] video')
+  for (var v = 0; v < videos.length; v++) {
+    rememberCustomBackgroundElement(videos[v])
+    videos[v].style.opacity = '0'
+  }
+}
+
+function setCustomBackground(config) {
+  if (JSON.stringify(customBackground) === JSON.stringify(config)) {
+    applyCustomBackground()
+    return
+  }
+  clearCustomBackgroundElements()
+  customBackground = config
+  applyCustomBackground()
 }
 
 function patchRankedQueues(queues, rank) {
@@ -259,18 +421,102 @@ function isRankedUrl(url) {
   return url.indexOf('/lol-ranked/') >= 0 || url.indexOf('/lol-summoner/v1/current-summoner') >= 0
 }
 
+function isOverviewCardUrl(url) {
+  return url.indexOf('/lol-honor-v2/v1/profile') >= 0 ||
+    url.indexOf('/lol-champion-mastery/') >= 0 ||
+    url.indexOf('/lol-trophies/v1/current-summoner/trophies/profile') >= 0 ||
+    url.indexOf('/lol-banners/v1/current-summoner/flags') >= 0
+}
+
+function interceptOverviewCards(data, url, rank) {
+  if (!rank) return data
+  if (url.indexOf('/lol-trophies/v1/current-summoner/trophies/profile') >= 0 && rank.trophyTheme !== 'AUTO') {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) data = {}
+    data.theme = rank.trophyTheme
+    data.bracket = rank.trophyBracket
+    data.tier = rank.trophyTier
+    if (data.seasonId === undefined) data.seasonId = 0
+  }
+  if (data === null || data === undefined) return data
+  if (url.indexOf('/lol-honor-v2/v1/profile') >= 0 && rank.honorLevel !== 'AUTO') {
+    data.honorLevel = parseInt(rank.honorLevel, 10)
+  }
+  if (url.indexOf('/lol-champion-mastery/') >= 0) {
+    var masteryScore = Math.max(0, parseInt(rank.masteryScore, 10) || 0)
+    if (url.indexOf('/champion-mastery-score') >= 0 && rank.masteryScore !== '') return masteryScore
+    if (rank.masteryScore !== '' && typeof data === 'object') {
+      if (data.score !== undefined) data.score = masteryScore
+      if (data.totalScore !== undefined) data.totalScore = masteryScore
+    }
+    var selectedMasteryLevels = [rank.masteryLevel || 'AUTO', rank.masteryLevel2 || 'AUTO', rank.masteryLevel3 || 'AUTO']
+    var masteries = Array.isArray(data) ? data : (data.masteries || data.championMasteries)
+    if (Array.isArray(masteries)) {
+      for (var m = 0; m < selectedMasteryLevels.length; m++) {
+        if (selectedMasteryLevels[m] !== 'AUTO' && masteries[m]) masteries[m].championLevel = Math.max(1, parseInt(selectedMasteryLevels[m], 10) || 1)
+      }
+    }
+    var selectedChampionIds = [rank.masteryChampionId || 'AUTO', rank.masteryChampionId2 || 'AUTO', rank.masteryChampionId3 || 'AUTO']
+    var championMasteries = Array.isArray(data) ? data : (data.masteries || data.championMasteries)
+    if (Array.isArray(championMasteries)) {
+      for (var championIndex = 0; championIndex < selectedChampionIds.length; championIndex++) {
+        if (selectedChampionIds[championIndex] !== 'AUTO' && championMasteries[championIndex]) {
+          championMasteries[championIndex].championId = parseInt(selectedChampionIds[championIndex], 10)
+        }
+      }
+    }
+  }
+  if (url.indexOf('/lol-banners/v1/current-summoner/flags/equipped') >= 0 && rank.clashBannerTheme !== 'AUTO') {
+    data.theme = rank.clashBannerTheme
+    data.level = rank.clashBannerLevel
+  }
+  return data
+}
+
+function shouldForceTrophyResponse(url) {
+  return overviewEnabled && overrideRank && overrideRank.trophyTheme !== 'AUTO' &&
+    url.indexOf('/lol-trophies/v1/current-summoner/trophies/profile') >= 0
+}
+
+function cloneJson(value) {
+  if (value === undefined) return value
+  return JSON.parse(JSON.stringify(value))
+}
+
+function patchOverviewPayload(data, url) {
+  if (isOverviewCardUrl(url)) overviewPayloadCache[url] = cloneJson(data)
+  if (!overviewEnabled || !overrideRank || !isOverviewCardUrl(url)) return data
+  return interceptOverviewCards(cloneJson(data), url, overrideRank)
+}
+
+function refreshDataBindings() {
+  for (var url in overviewPayloadCache) {
+    var event = { uri: url, eventType: 'Update', data: patchOverviewPayload(overviewPayloadCache[url], url) }
+    for (var i = 0; i < dataBindingListeners.length; i++) {
+      try { dataBindingListeners[i].listener.call(dataBindingListeners[i].context, event) }
+      catch (e) {}
+    }
+  }
+}
+
 function installFetchInterceptor() {
   var origFetch = window.fetch
   window.fetch = function() {
-    var url = typeof arguments[0] === 'string' ? arguments[0] : ''
-    if (!isRankedUrl(url)) return origFetch.apply(this, arguments)
+    var input = arguments[0]
+    var url = typeof input === 'string' ? input : (input && input.url ? input.url : '')
+    if (!isRankedUrl(url) && !isOverviewCardUrl(url)) return origFetch.apply(this, arguments)
     log('Intercepted fetch: ' + url)
     return origFetch.apply(this, arguments).then(function(res) {
       var cloned = res.clone()
-      return cloned.json().then(function(data) {
-        if (overviewEnabled && overrideRank) data = interceptRankedData(data, overrideRank)
+      return cloned.text().then(function(text) {
+        var data = null
+        try { data = JSON.parse(text) } catch (e) {}
+        if (overviewEnabled && overrideRank && isRankedUrl(url)) data = interceptRankedData(data, overrideRank)
+        if (overviewEnabled && overrideRank && isOverviewCardUrl(url)) data = interceptOverviewCards(data, url, overrideRank)
+        if (data === null) return res
         return new Response(JSON.stringify(data), {
-          status: res.status, statusText: res.statusText, headers: res.headers
+          status: shouldForceTrophyResponse(url) ? 200 : res.status,
+          statusText: shouldForceTrophyResponse(url) ? 'OK' : res.statusText,
+          headers: res.headers
         })
       })['catch'](function() { return res })
     })
@@ -279,12 +525,50 @@ function installFetchInterceptor() {
 }
 
 function installXHRInterceptor() {
-  var origOpen = XMLHttpRequest.prototype.open
+  if (xhrInstalled) return
+  xhrInstalled = true
+  var proto = XMLHttpRequest.prototype
+  var origOpen = proto.open
   var origSend = XMLHttpRequest.prototype.send
-  XMLHttpRequest.prototype.open = function(method, url) {
-    this._rankUrl = url
+  var responseTextDescriptor = Object.getOwnPropertyDescriptor(proto, 'responseText')
+  var statusDescriptor = Object.getOwnPropertyDescriptor(proto, 'status')
+  proto.open = function(method, url) {
+    this._rankUrl = String(url || '')
     return origOpen.apply(this, arguments)
   }
+
+  if (responseTextDescriptor && responseTextDescriptor.get) {
+    try {
+      Object.defineProperty(proto, 'responseText', {
+        configurable: responseTextDescriptor.configurable,
+        enumerable: responseTextDescriptor.enumerable,
+        get: function() {
+          var text = responseTextDescriptor.get.call(this)
+          var url = this._rankUrl || ''
+          if (this.readyState !== 4 || !isOverviewCardUrl(url)) return text
+          try { return JSON.stringify(patchOverviewPayload(text ? JSON.parse(text) : null, url)) }
+          catch (e) {
+            if (shouldForceTrophyResponse(url)) return JSON.stringify(interceptOverviewCards(null, url, overrideRank))
+            return text
+          }
+        }
+      })
+    } catch (e) { log('Could not install DataBinding XHR getter') }
+  }
+
+  if (statusDescriptor && statusDescriptor.get) {
+    try {
+      Object.defineProperty(proto, 'status', {
+        configurable: statusDescriptor.configurable,
+        enumerable: statusDescriptor.enumerable,
+        get: function() {
+          var status = statusDescriptor.get.call(this)
+          return this.readyState === 4 && shouldForceTrophyResponse(this._rankUrl || '') ? 200 : status
+        }
+      })
+    } catch (e) { log('Could not install trophy status override') }
+  }
+
   XMLHttpRequest.prototype.send = function() {
     var self = this
     var url = self._rankUrl || ''
@@ -293,11 +577,13 @@ function installXHRInterceptor() {
       self.addEventListener('readystatechange', function() {
         if (self.readyState === 4 && self.status === 200) {
           try {
-            var data = JSON.parse(self.responseText)
-            if (overviewEnabled && overrideRank) data = interceptRankedData(data, overrideRank)
+            if (self.responseType && self.responseType !== 'json' && self.responseType !== 'text') return
+            var expectsJson = self.responseType === 'json'
+            var data = expectsJson ? self.response : JSON.parse(self.responseText)
+            if (overviewEnabled && overrideRank && isRankedUrl(url)) data = interceptRankedData(data, overrideRank)
             var body = JSON.stringify(data)
-            Object.defineProperty(self, 'responseText', { value: body, configurable: true })
-            Object.defineProperty(self, 'response', { value: body, configurable: true })
+            if (!expectsJson) Object.defineProperty(self, 'responseText', { value: body, configurable: true })
+            Object.defineProperty(self, 'response', { value: expectsJson ? data : body, configurable: true })
           } catch (e) {}
         }
       })
@@ -305,6 +591,46 @@ function installXHRInterceptor() {
     return origSend.apply(this, arguments)
   }
   log('XHR interceptor installed')
+}
+
+function installDataBindingSocketHook(context) {
+  var rcp = context && context.rcp ? context.rcp : context
+  if (socketHookInstalled || !rcp || typeof rcp.preInit !== 'function') return
+  socketHookInstalled = true
+  rcp.preInit('rcp-fe-common-libs', function(provider) {
+    var riotSocket = provider && provider.getSocket ? provider.getSocket() : null
+    if (!riotSocket) return
+
+    if (riotSocket.client && typeof riotSocket.client.on === 'function') {
+      var originalOn = riotSocket.client.on
+      riotSocket.client.on = function(type, listener) {
+        if (type !== 'jsonApiEvent') return originalOn.apply(this, arguments)
+        var listenerRecord = { listener: listener, context: this }
+        dataBindingListeners.push(listenerRecord)
+        return originalOn.call(this, type, function(event) {
+          if (!event || !isOverviewCardUrl(event.uri || '')) return listener.apply(this, arguments)
+          var patchedEvent = Object.assign({}, event, { data: patchOverviewPayload(event.data, event.uri) })
+          return listener.call(this, patchedEvent)
+        })
+      }
+      return
+    }
+
+    if (typeof riotSocket.subscribe === 'function') {
+      var originalSubscribe = riotSocket.subscribe
+      riotSocket.subscribe = function(basePath, listener) {
+        dataBindingListeners.push({
+          context: this,
+          listener: function(event) {
+            if (event.uri.indexOf(basePath) === 0) return listener.call(this, event.uri, event.data)
+          }
+        })
+        return originalSubscribe.call(this, basePath, function(uri, data) {
+          return listener.call(this, uri, patchOverviewPayload(data, uri))
+        })
+      }
+    }
+  })
 }
 
 function overrideText(rank) {
@@ -326,11 +652,6 @@ function overrideText(rank) {
     if (ranked && ranked.innerText !== text) {
       rememberText(ranked)
       ranked.innerText = text
-    }
-    var masteryScore = wrappers[i].querySelector('.style-profile-champion-mastery-score')
-    if (masteryScore && masteryScore.textContent !== String(rank.leaguePoints)) {
-      rememberText(masteryScore)
-      masteryScore.textContent = String(rank.leaguePoints)
     }
   }
 
@@ -381,6 +702,185 @@ function overrideText(rank) {
   }
 }
 
+function setImageSource(element, source) {
+  if (!element || !source || element.getAttribute('src') === source) return
+  rememberAttribute(element, 'src')
+  element.setAttribute('src', source)
+}
+
+function getMasteryArtLevel(level) {
+  return Math.min(10, Math.max(1, parseInt(level, 10) || 1))
+}
+
+function loadChampionSummary() {
+  if (championSummaryPromise) return
+  championSummaryPromise = fetch('/lol-game-data/assets/v1/champion-summary.json', { credentials: 'include' })
+    .then(function(res) { if (!res.ok) throw new Error('Champion catalog unavailable'); return res.json() })
+    .then(function(data) {
+      championSummary = Array.isArray(data) ? data : []
+      applyMasteryChampions(overrideRank)
+    })['catch'](function() {
+      championSummaryPromise = null
+      log('Could not load champion catalog')
+    })
+}
+
+function findChampion(championId) {
+  if (championId === 'AUTO') return null
+  for (var i = 0; i < championSummary.length; i++) {
+    if (Number(championSummary[i].id) === Number(championId)) return championSummary[i]
+  }
+  return null
+}
+
+function applyMasteryChampions(rank) {
+  if (!rank) return
+  var selectedIds = [rank.masteryChampionId || 'AUTO', rank.masteryChampionId2 || 'AUTO', rank.masteryChampionId3 || 'AUTO']
+  if (selectedIds[0] === 'AUTO' && selectedIds[1] === 'AUTO' && selectedIds[2] === 'AUTO') return
+  if (!championSummary) { loadChampionSummary(); return }
+
+  var selected = [findChampion(selectedIds[0]), findChampion(selectedIds[1]), findChampion(selectedIds[2])]
+  if (selected[0] && selected[0].squarePortraitPath) {
+    var mainPortraits = queryAllDeep(document, '.profile-legendary-champion-mastery-component .style-profile-champion-icon.primary .style-profile-champion-icon-masked > img')
+    for (var p = 0; p < mainPortraits.length; p++) setImageSource(mainPortraits[p], selected[0].squarePortraitPath)
+  }
+
+  var tooltipSlots = queryAllDeep(document, '.style-profile-legendary-champion-mastery-triple-tooltip > .profile-legendary-champion-mastery-tooltip-component')
+  var visualToApiIndex = [1, 0, 2]
+  for (var slotIndex = 0; slotIndex < tooltipSlots.length && slotIndex < 3; slotIndex++) {
+    var champion = selected[visualToApiIndex[slotIndex]]
+    if (!champion) continue
+    var portrait = tooltipSlots[slotIndex].querySelector('.style-profile-champion-icon-masked > img')
+    var name = tooltipSlots[slotIndex].querySelector('.profile-lcm-tooltip-contents-title')
+    setImageSource(portrait, champion.squarePortraitPath)
+    if (name && name.textContent !== champion.name) {
+      rememberText(name)
+      name.textContent = champion.name
+    }
+  }
+}
+
+function applyMasteryLevelToRoot(root, level) {
+  if (!root || level === 'AUTO') return
+  var rawLevel = Math.max(1, parseInt(level, 10) || 1)
+  var artLevel = getMasteryArtLevel(rawLevel)
+  var labels = queryAllDeep(root, '.profile-lcm-tooltip-contents-level-text')
+  for (var l = 0; l < labels.length; l++) {
+    var label = 'Mastery Level ' + rawLevel
+    if (labels[l].textContent !== label) {
+      rememberText(labels[l])
+      labels[l].textContent = label
+    }
+  }
+  var art = queryAllDeep(root, '.mastery-crest-image, .style-profile-accent-image')
+  for (var a = 0; a < art.length; a++) {
+    rememberAttribute(art[a], 'class')
+    rememberAttribute(art[a], 'data-mastery-level')
+    var className = (art[a].getAttribute('class') || '').replace(/\blevel-\d+\b/g, '').trim()
+    art[a].setAttribute('class', (className + ' level-' + artLevel).trim())
+    art[a].setAttribute('data-mastery-level', String(artLevel))
+    setImageSource(art[a], '/fe/lol-shared-components/mastery-' + artLevel + '.png')
+  }
+  var bannerLevel = artLevel <= 4 ? 1 : (artLevel <= 9 ? 2 : 3)
+  var banners = queryAllDeep(root, '.style-profile-banner-image')
+  for (var b = 0; b < banners.length; b++) setImageSource(banners[b], '/fe/lol-shared-components/mastery-banner-' + bannerLevel + '.svg')
+}
+
+function loadClashCatalogs() {
+  if (clashCatalogPromise) return
+  clashCatalogPromise = Promise.all([
+    fetch('/lol-game-data/assets/v1/summoner-trophies.json', { credentials: 'include' }).then(function(res) { if (!res.ok) throw new Error('Trophy catalog unavailable'); return res.json() }),
+    fetch('/lol-game-data/assets/v1/summoner-banners.json', { credentials: 'include' }).then(function(res) { if (!res.ok) throw new Error('Banner catalog unavailable'); return res.json() })
+  ]).then(function(catalogs) {
+    clashCatalogs = { trophy: catalogs[0], banner: catalogs[1] }
+    applyClashArt(overrideRank)
+  })['catch'](function() {
+    clashCatalogPromise = null
+    log('Could not load Clash artwork catalogs')
+  })
+}
+
+function matchesCatalogValue(value, expected) {
+  return String(value || '').toLowerCase() === String(expected || '').toLowerCase()
+}
+
+function findCatalogEntry(entries, theme, levelOrBracket, key) {
+  if (!Array.isArray(entries)) return null
+  for (var i = 0; i < entries.length; i++) {
+    if (theme && !matchesCatalogValue(entries[i].theme, theme)) continue
+    if (levelOrBracket !== undefined && Number(entries[i][key]) !== Number(levelOrBracket)) continue
+    return entries[i]
+  }
+  return null
+}
+
+function applyClashArt(rank) {
+  if (!rank || (rank.trophyTheme === 'AUTO' && rank.clashBannerTheme === 'AUTO')) return
+  if (!clashCatalogs) { loadClashCatalogs(); return }
+
+  if (rank.trophyTheme !== 'AUTO') {
+    var trophy = findCatalogEntry(clashCatalogs.trophy.Trophies, rank.trophyTheme, rank.trophyBracket, 'bracket')
+    var pedestal = findCatalogEntry(clashCatalogs.trophy.TrophyPedestals, null, rank.trophyTier, 'tier')
+    var trophyCups = queryAllDeep(document, '.style-profile-trophy-component .style-profile-trophy-cupgem')
+    var trophyPedestals = queryAllDeep(document, '.style-profile-trophy-component .style-profile-trophy-pedestal')
+    for (var c = 0; c < trophyCups.length; c++) setImageSource(trophyCups[c], trophy && trophy.profileIcon)
+    for (var p = 0; p < trophyPedestals.length; p++) setImageSource(trophyPedestals[p], pedestal && pedestal.profileIcon)
+  }
+
+  if (rank.clashBannerTheme !== 'AUTO') {
+    var flag = findCatalogEntry(clashCatalogs.banner.BannerFlags, rank.clashBannerTheme, rank.clashBannerLevel, 'level')
+    var frame = findCatalogEntry(clashCatalogs.banner.BannerFrames, null, 1, 'level')
+    var flags = queryAllDeep(document, '.style-profile-clash-banner-component .style-profile-clash-banner-image')
+    var frames = queryAllDeep(document, '.style-profile-clash-banner-component .style-profile-clash-banner-frame')
+    for (var f = 0; f < flags.length; f++) setImageSource(flags[f], flag && flag.inventoryIcon)
+    for (var r = 0; r < frames.length; r++) setImageSource(frames[r], frame && frame.inventoryIcon)
+  }
+}
+
+function applyOverviewCards(rank) {
+  if (!rank) return
+
+  if (rank.masteryScore !== '') {
+    var masteryScores = queryAllDeep(document, '.style-profile-champion-mastery-score')
+    for (var i = 0; i < masteryScores.length; i++) {
+      if (masteryScores[i].textContent !== String(rank.masteryScore)) {
+        rememberText(masteryScores[i])
+        masteryScores[i].textContent = String(rank.masteryScore)
+      }
+    }
+  }
+
+  var primaryIcons = queryAllDeep(document, '.profile-legendary-champion-mastery-component .style-profile-champion-icon.primary')
+  for (var p = 0; p < primaryIcons.length; p++) {
+    var primaryRoot = primaryIcons[p].closest('.style-profile-emblem-content') || primaryIcons[p].parentElement
+    applyMasteryLevelToRoot(primaryRoot, rank.masteryLevel || 'AUTO')
+  }
+  var tooltipSlots = queryAllDeep(document, '.style-profile-legendary-champion-mastery-triple-tooltip > .profile-legendary-champion-mastery-tooltip-component')
+  var visualLevels = [rank.masteryLevel2 || 'AUTO', rank.masteryLevel || 'AUTO', rank.masteryLevel3 || 'AUTO']
+  for (var s = 0; s < tooltipSlots.length && s < visualLevels.length; s++) applyMasteryLevelToRoot(tooltipSlots[s], visualLevels[s])
+
+  if (rank.honorLevel !== 'AUTO') {
+    var honorLabels = queryAllDeep(document, '.style-profile-honor-component .style-profile-emblem-header-subtitle')
+    for (var h = 0; h < honorLabels.length; h++) {
+      var honorLabel = 'Honor Level ' + rank.honorLevel
+      if (honorLabels[h].textContent !== honorLabel) {
+        rememberText(honorLabels[h])
+        honorLabels[h].textContent = honorLabel
+      }
+    }
+    var honorV3 = queryAllDeep(document, '.style-profile-honor-component .style-profile-honor-icon-v3')
+    var honorLegacy = queryAllDeep(document, '.style-profile-honor-component .style-profile-honor-icon:not(.style-profile-honor-icon-v3)')
+    var honorAsset = '/fe/lol-static-assets/images/honor/profile/Emblem_Level_' + rank.honorLevel + '.png'
+    var legacyAsset = '/fe/lol-static-assets/images/honor/profile/Emblem_' + rank.honorLevel + (Number(rank.honorLevel) >= 2 && Number(rank.honorLevel) <= 4 ? '-0' : '') + '.png'
+    for (var v = 0; v < honorV3.length; v++) setImageSource(honorV3[v], honorAsset)
+    for (var o = 0; o < honorLegacy.length; o++) setImageSource(honorLegacy[o], legacyAsset)
+  }
+
+  applyMasteryChampions(rank)
+
+  applyClashArt(rank)
+}
+
 function patchEmblemAttributes(rank) {
   if (!rank) return
   var tierLower = rank.tier.toLowerCase()
@@ -423,6 +923,7 @@ function applyRank(rank) {
     clearRankBorderStyles()
     clearRankBannerStyles()
     removeCSS()
+    applyCustomBackground()
     return
   }
 
@@ -456,44 +957,64 @@ function applyRank(rank) {
   patchEmblemAttributes(rank)
   applyRankBorder(rank)
   applyRankBanner(rank)
+  applyOverviewCards(rank)
+  applyCustomBackground()
 }
 
 function startPolling() {
   setTimeout(function() { applyRank(overrideRank) }, 2000)
   setTimeout(function() { applyRank(overrideRank) }, 5000)
   setInterval(function() {
-    Promise.all([fetchDesiredRank(), fetchOverviewSetting()]).then(function(values) {
+    Promise.all([fetchDesiredRank(), fetchOverviewSetting(), fetchCustomBackground()]).then(function(values) {
       var newRank = values[0]
       var newOverviewEnabled = values[1]
+      var newCustomBackground = values[2]
       if (newRank !== null || overrideRank !== null) {
         if (!newRank || !overrideRank ||
             newRank.tier !== overrideRank.tier || newRank.division !== overrideRank.division ||
             newRank.queue !== overrideRank.queue || newRank.leaguePoints !== overrideRank.leaguePoints ||
             newRank.lastSeasonTier !== overrideRank.lastSeasonTier || newRank.borderTier !== overrideRank.borderTier ||
-            newRank.bannerTier !== overrideRank.bannerTier) {
+            newRank.bannerTier !== overrideRank.bannerTier || newRank.honorLevel !== overrideRank.honorLevel ||
+            newRank.masteryScore !== overrideRank.masteryScore || newRank.masteryLevel !== overrideRank.masteryLevel ||
+            newRank.masteryLevel2 !== overrideRank.masteryLevel2 || newRank.masteryLevel3 !== overrideRank.masteryLevel3 ||
+            newRank.masteryChampionId !== overrideRank.masteryChampionId ||
+            newRank.masteryChampionId2 !== overrideRank.masteryChampionId2 ||
+            newRank.masteryChampionId3 !== overrideRank.masteryChampionId3 ||
+            newRank.trophyTheme !== overrideRank.trophyTheme || newRank.trophyBracket !== overrideRank.trophyBracket ||
+            newRank.trophyTier !== overrideRank.trophyTier || newRank.clashBannerTheme !== overrideRank.clashBannerTheme ||
+            newRank.clashBannerLevel !== overrideRank.clashBannerLevel) {
           log('Rank changed -> reapplying')
+          restoreOverrides()
           overrideRank = newRank
+          refreshDataBindings()
         }
       }
+      var overviewSettingChanged = overviewEnabled !== newOverviewEnabled
       overviewEnabled = newOverviewEnabled
+      if (overviewSettingChanged) refreshDataBindings()
+      if (JSON.stringify(customBackground) !== JSON.stringify(newCustomBackground)) {
+        setCustomBackground(newCustomBackground)
+        log('Custom profile background ' + (customBackground ? 'updated' : 'cleared'))
+      }
       applyRank(overrideRank)
     })
   }, 5000)
   log('Polling started')
 }
 
-function init() {
-  Promise.all([fetchDesiredRank(), fetchOverviewSetting()]).then(function(values) {
+function startPlugin() {
+  if (pluginStarted) return
+  pluginStarted = true
+  Promise.all([fetchDesiredRank(), fetchOverviewSetting(), fetchCustomBackground()]).then(function(values) {
     var rank = values[0]
     overviewEnabled = values[1]
+    customBackground = values[2]
     overrideRank = rank
     if (rank) log('Rank: ' + rank.tier + ' ' + rank.division + ' (' + rank.queue + ')')
     else log('No rank found; waiting for config changes')
     log('Profile Overview override: ' + (overviewEnabled ? 'enabled' : 'disabled'))
 
     installFetchInterceptor()
-    installXHRInterceptor()
-
     function attachObserver() {
       if (!document.body) { setTimeout(attachObserver, 500); return }
       injectCSS()
@@ -510,7 +1031,15 @@ function init() {
   })
 }
 
-export default function(context) {
+export function init(context) {
   log('Plugin starting')
-  init()
+  installXHRInterceptor()
+  installDataBindingSocketHook(context)
+  startPlugin()
 }
+
+export default function(context) {
+  init(context)
+}
+
+export { getMasteryArtLevel, interceptOverviewCards, setCustomBackground }

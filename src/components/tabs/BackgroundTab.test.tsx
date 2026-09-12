@@ -1,6 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+const mockInvoke = vi.fn();
+const mockOpen = vi.fn();
+
+vi.mock('@tauri-apps/api/core', () => ({
+    invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+    open: (...args: unknown[]) => mockOpen(...args),
+}));
+
 vi.mock('../../data/supplemental-skins.json', () => ({
     default: {
         "103": [{ id: 103086, name: "Immortalized Legend Ahri", isBase: false, splashPath: "/lol-game-data/assets/v1/champion-splashes/103/103086.jpg" }],
@@ -50,6 +61,8 @@ describe('BackgroundTab', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        localStorage.clear();
+        mockInvoke.mockResolvedValue(undefined);
         globalThis.fetch = vi.fn().mockImplementation((url) => {
             if (url.includes('champion-summary.json')) {
                 return Promise.resolve({
@@ -76,6 +89,30 @@ describe('BackgroundTab', () => {
                 } as Response);
             }
             return Promise.reject(new Error('Unknown URL'));
+        });
+    });
+
+    it('should install and persist a custom animated background', async () => {
+        mockOpen.mockResolvedValue('C:\\images\\animated.gif');
+        mockInvoke.mockImplementation((command: string) => Promise.resolve(command === 'save_custom_background' ? 'custom-background.gif' : command === 'read_custom_background_preview' ? 'data:image/gif;base64,R0lGODlh' : undefined));
+        const props = createProps();
+        render(<BackgroundTab {...props} />);
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Custom / GIF' }));
+        fireEvent.click(screen.getByText('Choose File'));
+        expect(await screen.findByAltText('Custom background preview')).toBeDefined();
+        fireEvent.change(screen.getByLabelText('Custom background position'), { target: { value: 'top' } });
+        fireEvent.change(screen.getByLabelText('Custom background darken'), { target: { value: '35' } });
+        fireEvent.click(screen.getByText('APPLY CUSTOM'));
+
+        await waitFor(() => {
+            expect(mockInvoke).toHaveBeenCalledWith('install_pengu_plugin');
+            expect(mockInvoke).toHaveBeenCalledWith('save_custom_background', {
+                sourcePath: 'C:\\images\\animated.gif', fit: 'cover', position: 'top', dim: 35,
+            });
+            expect(JSON.parse(localStorage.getItem('profile_saved_custom_background_v1') || '{}')).toEqual({
+                active: true, fileName: 'animated.gif', fit: 'cover', position: 'top', dim: 35,
+            });
         });
     });
 
@@ -242,7 +279,7 @@ describe('BackgroundTab', () => {
         const btn = suggestion.closest('button')!;
 
         fireEvent.mouseEnter(btn);
-        expect(btn.style.background).toBe('rgb(42, 42, 62)');
+        expect(btn.style.background).toBe('rgba(59, 130, 246, 0.05)');
 
         fireEvent.mouseLeave(btn);
         expect(btn.style.background).toBe('none');
@@ -272,7 +309,7 @@ describe('BackgroundTab', () => {
 
         render(<BackgroundTab {...props} />);
 
-        expect(await screen.findByText('ID 555')).toBeDefined();
+        expect(await screen.findByText('#555')).toBeDefined();
     });
 
     it('should show error toast if champion fetch fails', async () => {

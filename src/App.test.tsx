@@ -59,6 +59,12 @@ describe('App Component', () => {
         expect(await screen.findByText('Profile Bio & Status')).toBeDefined();
     });
 
+    it('should open Overview Cards as a separate tab', async () => {
+        render(<App />);
+        fireEvent.click(await screen.findByText('Overview Cards'));
+        expect(await screen.findByText('Honor & Mastery')).toBeDefined();
+    });
+
     it('should handle app close request', async () => {
         let closeCallback: any;
         vi.mocked(window.getCurrentWindow).mockReturnValue({

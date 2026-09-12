@@ -73,7 +73,20 @@ async function readConfig() {
         leaguePoints: Math.max(0, parseInt(config.leaguePoints, 10) || 0),
         lastSeasonTier: config.lastSeasonTier || 'UNRANKED',
         borderTier: config.borderTier || 'AUTO',
-        bannerTier: config.bannerTier || 'AUTO'
+        bannerTier: config.bannerTier || 'AUTO',
+        honorLevel: config.honorLevel || 'AUTO',
+        masteryScore: config.masteryScore === undefined ? '' : String(config.masteryScore),
+        masteryLevel: config.masteryLevel || 'AUTO',
+        masteryLevel2: config.masteryLevel2 || 'AUTO',
+        masteryLevel3: config.masteryLevel3 || 'AUTO',
+        masteryChampionId: config.masteryChampionId || 'AUTO',
+        masteryChampionId2: config.masteryChampionId2 || 'AUTO',
+        masteryChampionId3: config.masteryChampionId3 || 'AUTO',
+        trophyTheme: config.trophyTheme || 'AUTO',
+        trophyBracket: parseInt(config.trophyBracket, 10) || 4,
+        trophyTier: parseInt(config.trophyTier, 10) || 4,
+        clashBannerTheme: config.clashBannerTheme || 'AUTO',
+        clashBannerLevel: parseInt(config.clashBannerLevel, 10) || 1
       }
     }
     return null
@@ -381,7 +394,20 @@ export async function startRankOverride(writeLog, fs) {
       newRank.leaguePoints !== currentRank.leaguePoints ||
       newRank.lastSeasonTier !== currentRank.lastSeasonTier ||
       newRank.borderTier !== currentRank.borderTier ||
-      newRank.bannerTier !== currentRank.bannerTier
+      newRank.bannerTier !== currentRank.bannerTier ||
+      newRank.honorLevel !== currentRank.honorLevel ||
+      newRank.masteryScore !== currentRank.masteryScore ||
+      newRank.masteryLevel !== currentRank.masteryLevel ||
+      newRank.masteryLevel2 !== currentRank.masteryLevel2 ||
+      newRank.masteryLevel3 !== currentRank.masteryLevel3 ||
+      newRank.masteryChampionId !== currentRank.masteryChampionId ||
+      newRank.masteryChampionId2 !== currentRank.masteryChampionId2 ||
+      newRank.masteryChampionId3 !== currentRank.masteryChampionId3 ||
+      newRank.trophyTheme !== currentRank.trophyTheme ||
+      newRank.trophyBracket !== currentRank.trophyBracket ||
+      newRank.trophyTier !== currentRank.trophyTier ||
+      newRank.clashBannerTheme !== currentRank.clashBannerTheme ||
+      newRank.clashBannerLevel !== currentRank.clashBannerLevel
     ))) {
       currentRank = newRank
       log(`Config changed: ${currentRank ? `${currentRank.tier} ${currentRank.division} (${currentRank.queue})` : 'cleared'}`)

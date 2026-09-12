@@ -102,7 +102,7 @@ describe('SettingsTab', () => {
         fireEvent.click(screen.getByText('Clear Saved Data'));
         expect(screen.getByText('Rank overrides')).toBeDefined();
         expect(screen.getByText('Challenge overrides')).toBeDefined();
-        expect(screen.getByText('Background skin')).toBeDefined();
+        expect(screen.getByText('Background skin & custom')).toBeDefined();
         expect(screen.getByText('Tokens, Title, Banner & Crest')).toBeDefined();
         expect(screen.getByText('Profile icon')).toBeDefined();
         expect(screen.getByText('Status & Bio')).toBeDefined();
@@ -130,12 +130,16 @@ describe('SettingsTab', () => {
 
     it('should clear the Pengu rank and overview override when rank is cleared', async () => {
         localStorage.setItem('pengu_overview_override_v1', 'true');
+        localStorage.setItem('profile_saved_custom_background_v1', '{"active":true}');
         render(<SettingsTab {...mockProps} showToast={vi.fn()} />);
         fireEvent.click(screen.getByText('Clear Saved Data'));
+        expect(screen.getByText('Overview Cards')).toBeDefined();
         fireEvent.click(screen.getByText('Clear Selected'));
 
         await waitFor(() => {
             expect(localStorage.getItem('pengu_overview_override_v1')).toBeNull();
+            expect(localStorage.getItem('profile_saved_custom_background_v1')).toBeNull();
+            expect(mockInvoke).toHaveBeenCalledWith('clear_custom_background');
             expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', {
                 tier: 'NONE',
                 division: 'I',
@@ -144,6 +148,19 @@ describe('SettingsTab', () => {
                 lastSeasonTier: 'UNRANKED',
                 borderTier: 'AUTO',
                 bannerTier: 'AUTO',
+                honorLevel: 'AUTO',
+                masteryScore: '',
+                masteryLevel: 'AUTO',
+                masteryLevel2: 'AUTO',
+                masteryLevel3: 'AUTO',
+                masteryChampionId: 'AUTO',
+                masteryChampionId2: 'AUTO',
+                masteryChampionId3: 'AUTO',
+                trophyTheme: 'AUTO',
+                trophyBracket: 4,
+                trophyTier: 4,
+                clashBannerTheme: 'AUTO',
+                clashBannerLevel: 1,
                 overviewEnabled: false,
             });
         });
