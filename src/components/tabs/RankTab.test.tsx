@@ -136,6 +136,8 @@ describe('RankTab', () => {
         expect(screen.getByRole('button', { name: 'TFT' })).toBeDefined();
         expect(screen.getByRole('button', { name: 'Double Up' })).toBeDefined();
         expect(screen.queryByRole('button', { name: 'Flex 3v3' })).toBeNull();
+        expect(screen.getByTitle('GRANDMASTER rank tier').parentElement).toHaveClass('rank-tier-grid');
+        expect(screen.getByText('1. Install PenguLoader').parentElement?.parentElement).toHaveClass('rank-setup-grid');
         await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
     });
 

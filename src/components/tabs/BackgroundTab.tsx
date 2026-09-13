@@ -429,11 +429,11 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     };
 
     return (
-        <div className="tab-content fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '0 20px 40px 20px' }}>
-            <div className="background-tab-header">
-                <div>
-                    <h2>Background</h2>
-                    <p>Choose a Riot skin or use your own image or animated GIF.</p>
+        <div className="tab-content fadeIn ui-page">
+            <div className="background-tab-header ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Background</h2>
+                    <p className="ui-page-header__description">Choose a Riot skin or use your own image or animated GIF.</p>
                 </div>
             </div>
 
@@ -442,17 +442,21 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                 <button type="button" role="tab" aria-label="Custom / GIF" aria-selected={backgroundMode === 'custom'} className={backgroundMode === 'custom' ? 'active' : ''} onClick={() => setBackgroundMode('custom')}><Film size={18} /><span><strong>Custom / GIF</strong><small>Upload your own static or animated background</small></span></button>
             </div>
 
-            {backgroundMode === 'custom' && <div className="card custom-background-card" style={{ marginBottom: '12px', flexShrink: 0, padding: '18px 20px' }}>
+            {backgroundMode === 'custom' && <div className="card custom-background-card ui-panel" style={{ marginBottom: '12px', flexShrink: 0 }}>
                 <div className="custom-background-layout">
                     <div className="custom-background-preview" style={{ backgroundSize: customFit, backgroundPosition: customPosition }}>
                         {customPreview ? <img src={customPreview} alt="Custom background preview" style={{ objectFit: customFit, objectPosition: customPosition }} /> : <Film size={28} />}
+                        <div className="custom-background-preview-dim" aria-hidden="true" style={{ opacity: customDim / 100 }} />
                         <span>{customFileName || 'PNG, JPG, WEBP or GIF'}</span>
                         {customActive && <b>ACTIVE</b>}
                     </div>
                     <div className="custom-background-content">
-                        <div>
-                            <h3 className="card-title" style={{ margin: 0, fontSize: '0.9rem' }}>Custom Image / GIF</h3>
-                            <p style={{ margin: '3px 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Use any local image or animated GIF. Custom media takes priority until removed.</p>
+                        <div className="ui-section-header">
+                            <div className="ui-section-header__icon"><Film size={16} /></div>
+                            <div className="ui-section-header__copy">
+                                <h3 className="ui-section-header__title">Custom Image / GIF</h3>
+                                <p className="ui-section-header__description">Use any local image or animated GIF. Custom media takes priority until removed.</p>
+                            </div>
                         </div>
                         <div className="custom-background-options">
                             <label>Fit
@@ -467,7 +471,7 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                                 <input aria-label="Custom background darken" type="range" min="0" max="80" step="5" value={customDim} onChange={event => setCustomDim(Number(event.target.value))} />
                             </label>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <div className="ui-inline-actions">
                             <button type="button" className="ghost-btn" onClick={chooseCustomBackground} disabled={customLoading}><Upload size={14} /> Choose File</button>
                             <button type="button" className="primary-btn" onClick={applyCustomBackground} disabled={customLoading || (!customSourcePath && !customActive)}>{customLoading ? 'APPLYING...' : 'APPLY CUSTOM'}</button>
                             {customActive && <button type="button" className="ghost-btn" onClick={clearCustomBackground} disabled={customLoading} style={{ color: '#f87171' }}><Trash2 size={14} /> Remove</button>}
@@ -478,17 +482,14 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
 
             {backgroundMode === 'riot' && <>
             {/* 1. Direct Skin ID Card */}
-            <div className="card" style={{ marginBottom: '12px', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <div style={{ 
-                        width: '28px', height: '28px', borderRadius: '6px', 
-                        background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
+            <div className="card ui-panel" style={{ marginBottom: '12px', flexShrink: 0 }}>
+                <div className="ui-section-header">
+                    <div className="ui-section-header__icon">
                         <Hash size={14} style={{ color: 'var(--hextech-gold)' }} />
                     </div>
-                    <div><h3 className="card-title" style={{ margin: 0, fontSize: '0.9rem' }}>Profile Background</h3><p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Search directly or browse by champion.</p></div>
+                    <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Profile Background</h3><p className="ui-section-header__description">Search directly or browse by champion.</p></div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                <div className="background-direct-row">
                     <div ref={searchRef} style={{ flex: 1, position: 'relative' }}>
                         <input
                             type="text"

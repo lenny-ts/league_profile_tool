@@ -26,13 +26,13 @@ interface OverviewTabProps {
 interface ChampionSummary {
     id: number;
     name: string;
+    squarePortraitPath?: string;
 }
 
 const CLASH_THEMES = ['AUTO', 'Bandle_City', 'Bilgewater', 'Demacia', 'Freljord', 'Ionia', 'Ixtal', 'Mount_Targon', 'Noxus', 'Piltover', 'Shadow_Isles', 'Shurima', 'Void', 'Zaun'];
 const RANK_TIERS = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
-const CHAMPION_SUMMARY_URL = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-summary.json';
-const fieldStyle: React.CSSProperties = { display: 'grid', gap: '7px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' };
-const controlStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '7px', border: '1px solid var(--glass-border)', background: '#111318', color: 'var(--text-primary)', fontWeight: 700 };
+const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default';
+const CHAMPION_SUMMARY_URL = `${CDRAGON_BASE}/v1/champion-summary.json`;
 
 function getSavedValue(key: string, fallback: string): string {
     try {
@@ -156,45 +156,61 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ lcu, showToast, addLog, lcuRe
         { number: '02', title: 'Left', detail: 'First hover slot', suffix: '-left', championId: masteryChampionId2, setChampionId: setMasteryChampionId2, level: masteryLevel2, setLevel: setMasteryLevel2 },
         { number: '03', title: 'Right', detail: 'Third hover slot', suffix: '-right', championId: masteryChampionId3, setChampionId: setMasteryChampionId3, level: masteryLevel3, setLevel: setMasteryLevel3 },
     ];
+    const championInitials = (id: string) => {
+        if (id === 'AUTO') return 'A';
+        const name = champions.find(champion => String(champion.id) === id)?.name || id;
+        return name.slice(0, 2).toUpperCase();
+    };
+    const championName = (id: string) => champions.find(champion => String(champion.id) === id)?.name || `Champion ${id}`;
+    const championIconUrl = (id: string) => {
+        const champion = champions.find(candidate => String(candidate.id) === id);
+        if (champion?.squarePortraitPath) {
+            return `${CDRAGON_BASE}${champion.squarePortraitPath.replace('/lol-game-data/assets', '').toLowerCase()}`;
+        }
+        return `${CDRAGON_BASE}/v1/champion-icons/${encodeURIComponent(id)}.png`;
+    };
 
     return (
-        <div className="tab-content fadeIn overview-studio-page" style={{ padding: '0 20px 40px' }}>
-            <div className="overview-studio-header">
-                <div>
-                    <h2>Overview Cards</h2>
-                    <p>Customize Honor, Mastery and Clash cards shown on your profile.</p>
+        <div className="tab-content fadeIn overview-studio-page ui-page">
+            <div className="overview-studio-header ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Overview Cards</h2>
+                    <p className="ui-page-header__description">Customize Honor, Mastery and Clash cards shown on your profile.</p>
                 </div>
-                <span className={`overview-plugin-state ${pluginInstalled ? 'ready' : ''}`}>
-                    {pluginInstalled ? 'Pengu ready' : 'Pengu required'}
-                </span>
+                <div className="ui-page-header__actions">
+                    <span className={`overview-plugin-state ${pluginInstalled ? 'ready' : ''}`}>
+                        {pluginInstalled ? 'Pengu ready' : 'Pengu required'}
+                    </span>
+                </div>
             </div>
 
             <div className="overview-studio-grid">
+                <div className="overview-control-stack">
                 <section className="card overview-module overview-mastery-module">
-                    <header className="overview-module-header">
-                        <div className="overview-module-icon"><Medal size={18} /></div>
-                        <div><h3>Honor & Mastery</h3><p>Set progression values and the three champions shown on hover.</p></div>
+                    <header className="overview-module-header ui-section-header">
+                        <div className="overview-module-icon ui-section-header__icon"><Medal size={18} /></div>
+                        <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Honor & Mastery</h3><p className="ui-section-header__description">Set progression values and the three champions shown on hover.</p></div>
                     </header>
                     <div className="overview-global-fields">
-                        <label htmlFor="overview-honor-level" style={fieldStyle}>Honor Level
-                            <select id="overview-honor-level" value={honorLevel} disabled={!lcu} onChange={(event) => setHonorLevel(event.target.value)} style={controlStyle}>
+                        <label htmlFor="overview-honor-level" className="ui-field">Honor Level
+                            <select id="overview-honor-level" className="ui-control" value={honorLevel} disabled={!lcu} onChange={(event) => setHonorLevel(event.target.value)}>
                                 <option value="AUTO">AUTOMATIC</option>
                                 {[1, 2, 3, 4, 5].map(level => <option key={level} value={String(level)}>LEVEL {level}</option>)}
                             </select>
                         </label>
-                        <label htmlFor="overview-mastery-score" style={fieldStyle}>Mastery Score
-                            <input id="overview-mastery-score" type="number" min="0" max="9999999" placeholder="Automatic" value={masteryScore} disabled={!lcu} onChange={(event) => setMasteryScore(event.target.value === '' ? '' : String(Math.min(9999999, Math.max(0, Number.parseInt(event.target.value, 10) || 0))))} style={{ ...controlStyle, background: 'rgba(0, 0, 0, 0.28)' }} />
+                        <label htmlFor="overview-mastery-score" className="ui-field">Mastery Score
+                            <input id="overview-mastery-score" className="ui-control" type="number" min="0" max="9999999" placeholder="Automatic" value={masteryScore} disabled={!lcu} onChange={(event) => setMasteryScore(event.target.value === '' ? '' : String(Math.min(9999999, Math.max(0, Number.parseInt(event.target.value, 10) || 0))))} />
                         </label>
                     </div>
                     <div className="overview-mastery-roster">
                         {masterySlots.map(slot => (
                             <div className="overview-mastery-row" key={slot.number}>
                                 <div className="overview-slot-label"><div><strong>{slot.title}</strong><span>{slot.detail}</span></div></div>
-                                <label htmlFor={`overview-mastery-champion${slot.suffix}`} style={fieldStyle}>Champion
-                                    <select id={`overview-mastery-champion${slot.suffix}`} aria-label={`${slot.title === 'Center' ? 'Primary / Center' : `${slot.title} Hover`} Champion`} value={slot.championId} disabled={!lcu} onChange={(event) => slot.setChampionId(event.target.value)} style={controlStyle}>{championOptions(slot.championId)}</select>
+                                <label htmlFor={`overview-mastery-champion${slot.suffix}`} className="ui-field">Champion
+                                    <select id={`overview-mastery-champion${slot.suffix}`} className="ui-control" aria-label={`${slot.title === 'Center' ? 'Primary / Center' : `${slot.title} Hover`} Champion`} value={slot.championId} disabled={!lcu} onChange={(event) => slot.setChampionId(event.target.value)}>{championOptions(slot.championId)}</select>
                                 </label>
-                                <label htmlFor={`overview-mastery-level${slot.suffix}`} style={fieldStyle}>Level
-                                    <input id={`overview-mastery-level${slot.suffix}`} aria-label={`${slot.title === 'Center' ? 'Primary / Center' : `${slot.title} Hover`} Mastery Level`} type="number" min="1" placeholder="Auto" value={slot.level === 'AUTO' ? '' : slot.level} disabled={!lcu} onChange={(event) => slot.setLevel(normalizeMasteryLevel(event.target.value))} style={{ ...controlStyle, background: 'rgba(0, 0, 0, 0.28)' }} />
+                                <label htmlFor={`overview-mastery-level${slot.suffix}`} className="ui-field">Level
+                                    <input id={`overview-mastery-level${slot.suffix}`} className="ui-control" aria-label={`${slot.title === 'Center' ? 'Primary / Center' : `${slot.title} Hover`} Mastery Level`} type="number" min="1" placeholder="Auto" value={slot.level === 'AUTO' ? '' : slot.level} disabled={!lcu} onChange={(event) => slot.setLevel(normalizeMasteryLevel(event.target.value))} />
                                 </label>
                             </div>
                         ))}
@@ -203,38 +219,68 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ lcu, showToast, addLog, lcuRe
 
                 <aside className="overview-clash-stack">
                     <section className="card overview-module overview-clash-module">
-                        <header className="overview-module-header"><div className="overview-module-icon"><Trophy size={18} /></div><div><h3>Clash Trophy</h3><p>Choose the cup, bracket and tier.</p></div></header>
+                        <header className="overview-module-header ui-section-header"><div className="overview-module-icon ui-section-header__icon"><Trophy size={18} /></div><div className="ui-section-header__copy"><h3 className="ui-section-header__title">Clash Trophy</h3><p className="ui-section-header__description">Choose the cup, bracket and tier.</p></div></header>
                         <div className="overview-clash-fields">
-                            <label htmlFor="overview-trophy-theme" style={fieldStyle}>Theme
-                                <select id="overview-trophy-theme" aria-label="Clash Trophy" value={trophyTheme} disabled={!lcu} onChange={(event) => setTrophyTheme(event.target.value)} style={controlStyle}>{CLASH_THEMES.map(theme => <option key={theme} value={theme}>{theme === 'AUTO' ? 'AUTOMATIC' : theme.replaceAll('_', ' ')}</option>)}</select>
+                            <label htmlFor="overview-trophy-theme" className="ui-field">Theme
+                                <select id="overview-trophy-theme" className="ui-control" aria-label="Clash Trophy" value={trophyTheme} disabled={!lcu} onChange={(event) => setTrophyTheme(event.target.value)}>{CLASH_THEMES.map(theme => <option key={theme} value={theme}>{theme === 'AUTO' ? 'AUTOMATIC' : theme.replaceAll('_', ' ')}</option>)}</select>
                             </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', opacity: trophyTheme === 'AUTO' ? 0.5 : 1 }}>
-                                <label htmlFor="overview-trophy-bracket" style={fieldStyle}>Bracket
-                                    <select id="overview-trophy-bracket" aria-label="Trophy Bracket" value={trophyBracket} disabled={!lcu || trophyTheme === 'AUTO'} onChange={(event) => setTrophyBracket(event.target.value)} style={controlStyle}>{[4, 8, 16].map(bracket => <option key={bracket} value={String(bracket)}>{bracket} TEAMS</option>)}</select>
+                            <div className="overview-trophy-meta-grid" style={{ opacity: trophyTheme === 'AUTO' ? 0.5 : 1 }}>
+                                <label htmlFor="overview-trophy-bracket" className="ui-field">Bracket
+                                    <select id="overview-trophy-bracket" className="ui-control" aria-label="Trophy Bracket" value={trophyBracket} disabled={!lcu || trophyTheme === 'AUTO'} onChange={(event) => setTrophyBracket(event.target.value)}>{[4, 8, 16].map(bracket => <option key={bracket} value={String(bracket)}>{bracket} TEAMS</option>)}</select>
                                 </label>
-                                <label htmlFor="overview-trophy-tier" style={fieldStyle}>Tier
-                                    <select id="overview-trophy-tier" aria-label="Trophy Tier" value={trophyTier} disabled={!lcu || trophyTheme === 'AUTO'} onChange={(event) => setTrophyTier(event.target.value)} style={controlStyle}>{[1, 2, 3, 4].map(tier => <option key={tier} value={String(tier)}>TIER {tier}</option>)}</select>
+                                <label htmlFor="overview-trophy-tier" className="ui-field">Tier
+                                    <select id="overview-trophy-tier" className="ui-control" aria-label="Trophy Tier" value={trophyTier} disabled={!lcu || trophyTheme === 'AUTO'} onChange={(event) => setTrophyTier(event.target.value)}>{[1, 2, 3, 4].map(tier => <option key={tier} value={String(tier)}>TIER {tier}</option>)}</select>
                                 </label>
                             </div>
                         </div>
                     </section>
 
                     <section className="card overview-module overview-clash-module">
-                        <header className="overview-module-header"><div className="overview-module-icon"><Flag size={18} /></div><div><h3>Clash Banner</h3><p>Choose the regional flag and level.</p></div></header>
+                        <header className="overview-module-header ui-section-header"><div className="overview-module-icon ui-section-header__icon"><Flag size={18} /></div><div className="ui-section-header__copy"><h3 className="ui-section-header__title">Clash Banner</h3><p className="ui-section-header__description">Choose the regional flag and level.</p></div></header>
                         <div className="overview-clash-fields">
-                            <label htmlFor="overview-clash-banner-theme" style={fieldStyle}>Theme
-                                <select id="overview-clash-banner-theme" aria-label="Clash Banner" value={clashBannerTheme} disabled={!lcu} onChange={(event) => setClashBannerTheme(event.target.value)} style={controlStyle}>{CLASH_THEMES.map(theme => <option key={theme} value={theme}>{theme === 'AUTO' ? 'AUTOMATIC' : theme.replaceAll('_', ' ')}</option>)}</select>
+                            <label htmlFor="overview-clash-banner-theme" className="ui-field">Theme
+                                <select id="overview-clash-banner-theme" className="ui-control" aria-label="Clash Banner" value={clashBannerTheme} disabled={!lcu} onChange={(event) => setClashBannerTheme(event.target.value)}>{CLASH_THEMES.map(theme => <option key={theme} value={theme}>{theme === 'AUTO' ? 'AUTOMATIC' : theme.replaceAll('_', ' ')}</option>)}</select>
                             </label>
-                            <label htmlFor="overview-clash-banner-level" style={{ ...fieldStyle, opacity: clashBannerTheme === 'AUTO' ? 0.5 : 1 }}>Banner Level
-                                <select id="overview-clash-banner-level" value={clashBannerLevel} disabled={!lcu || clashBannerTheme === 'AUTO'} onChange={(event) => setClashBannerLevel(event.target.value)} style={controlStyle}>{[1, 2, 3].map(level => <option key={level} value={String(level)}>LEVEL {level}</option>)}</select>
+                            <label htmlFor="overview-clash-banner-level" className="ui-field" style={{ opacity: clashBannerTheme === 'AUTO' ? 0.5 : 1 }}>Banner Level
+                                <select id="overview-clash-banner-level" className="ui-control" value={clashBannerLevel} disabled={!lcu || clashBannerTheme === 'AUTO'} onChange={(event) => setClashBannerLevel(event.target.value)}>{[1, 2, 3].map(level => <option key={level} value={String(level)}>LEVEL {level}</option>)}</select>
                             </label>
                         </div>
                     </section>
                 </aside>
+                </div>
+
+                <aside className="card overview-live-preview" aria-label="Overview live preview">
+                    <header><div><span>Preview</span><strong>Overview Modules</strong></div><b>LIVE</b></header>
+                    <div className="overview-preview-mastery">
+                        <span>MASTERY</span>
+                        <div className="overview-preview-champions">
+                            {masterySlots.map(slot => (
+                                <b key={slot.number}>
+                                    {championInitials(slot.championId)}
+                                    {slot.championId !== 'AUTO' && /^\d+$/.test(slot.championId) && (
+                                        <img
+                                            key={slot.championId}
+                                            src={championIconUrl(slot.championId)}
+                                            alt={championName(slot.championId)}
+                                            onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                        />
+                                    )}
+                                    <small className="overview-preview-mastery-level" aria-label={`${slot.title} mastery level`}>{slot.level}</small>
+                                </b>
+                            ))}
+                        </div>
+                        <strong>{masteryScore || 'AUTO'} <small>TOTAL SCORE</small></strong>
+                    </div>
+                    <div className="overview-preview-pair">
+                        <div><span>CLASH TROPHY</span><b>{trophyTheme === 'AUTO' ? 'AUTO' : trophyTheme.replaceAll('_', ' ')}</b><small>{trophyTheme === 'AUTO' ? 'Automatic bracket / tier' : `${trophyBracket} teams / Tier ${trophyTier}`}</small></div>
+                        <div><span>HONOR</span><b>{honorLevel}</b><small>Selected level</small></div>
+                    </div>
+                    <div className="overview-preview-banner"><span>CLASH BANNER</span><strong>{clashBannerTheme === 'AUTO' ? 'AUTOMATIC' : clashBannerTheme.replaceAll('_', ' ')}</strong><small>{clashBannerTheme === 'AUTO' ? 'Automatic level' : `Level ${clashBannerLevel}`}</small></div>
+                </aside>
             </div>
 
-            <div className="overview-action-dock card">
-                <div><Award size={17} /><span>Automatic keeps Riot's original value.</span></div>
+            <div className="overview-action-dock card ui-action-dock">
+                <div className="ui-action-dock__hint"><Award size={17} /><span>Automatic keeps Riot's original value.</span></div>
                 <button type="button" className="primary-btn" onClick={applyChanges} disabled={!lcu || loading}>{loading ? 'APPLYING...' : 'APPLY OVERVIEW'}</button>
             </div>
         </div>

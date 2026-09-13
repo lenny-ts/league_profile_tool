@@ -51,6 +51,24 @@ import LobbyTab from "./components/tabs/LobbyTab";
 import FriendManagerTab from "./components/tabs/FriendManagerTab";
 import PresetsTab from "./components/tabs/PresetsTab";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { applyWindowSizePreset, getSavedWindowSizePreset } from "./utils/windowSize";
+
+const TAB_TITLES: Record<string, string> = {
+  home: "Dashboard",
+  profile: "Profile Bio & Status",
+  background: "Background",
+  overview: "Overview Cards",
+  rank: "Rank Overrides",
+  challenge: "Challenge Level",
+  icons: "Icon Swapper",
+  tokens: "Profile Tokens",
+  music: "Music Sync",
+  presets: "Profile Presets",
+  friends: "Friend Manager",
+  lobby: "Lobby Manager",
+  logs: "System Logs",
+  settings: "Settings",
+};
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
@@ -75,6 +93,10 @@ function App() {
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
+
+    applyWindowSizePreset(getSavedWindowSizePreset()).catch((err) => {
+      addLog(`Window size restore failed: ${err}`);
+    });
 
     const init = async () => {
       try {
@@ -188,14 +210,23 @@ function App() {
 
   return (
     <div className={`main-app ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <header className="app-header">
+        <button type="button" className="app-brand" onClick={() => setActiveTab('home')} aria-label="Open dashboard">
+          <img src="/app-icon.svg" alt="" className="app-brand-logo" />
+          <span>LPT CONTROL CENTER</span>
+        </button>
+        <div className="app-header-status">
+          <span className={`app-connection ${lcu ? 'connected' : ''}`}>
+            <span className={`status-dot ${lcu ? 'online' : 'offline'}`}></span>
+            {lcu ? 'LCU CONNECTED' : 'WAITING FOR LCU'}
+          </span>
+          <span className="app-version">v{clientVersion}</span>
+        </div>
+      </header>
+
       <nav className="nav-bar">
         <div className="nav-header">
-          {!isCollapsed && (
-            <>
-              <img src="/app-icon.svg" alt="App Icon" className="nav-logo" style={{ width: '34px', height: '34px', borderRadius: '6px', objectFit: 'contain' }} />
-              <span className="nav-title">LP TOOL</span>
-            </>
-          )}
+          {!isCollapsed && <span className="nav-title">Navigation</span>}
           <button type="button" 
             className="nav-toggle-btn" 
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -205,36 +236,29 @@ function App() {
           </button>
         </div>
         <div className="nav-links">
-          <div className="nav-category">
-            {!isCollapsed && <div className="nav-category-title">General</div>}
-            <NavItem icon={<Home size={18} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} collapsed={isCollapsed} />
-          </div>
+          <NavItem icon={<Home size={18} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} collapsed={isCollapsed} />
 
           <div className="nav-category">
             {!isCollapsed && <div className="nav-category-title">Customization</div>}
-            <NavItem icon={<ShieldCheck size={18} />} label="Profile Bio" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} collapsed={isCollapsed} />
             <NavItem icon={<Image size={18} />} label="Background" active={activeTab === 'background'} onClick={() => setActiveTab('background')} collapsed={isCollapsed} />
+            <NavItem icon={<PanelsTopLeft size={18} />} label="Overview Cards" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} collapsed={isCollapsed} />
+            <NavItem icon={<Trophy size={18} />} label="Rank Overrides" active={activeTab === 'rank'} onClick={() => setActiveTab('rank')} collapsed={isCollapsed} />
+            <NavItem icon={<Gem size={18} />} label="Challenge Level" active={activeTab === 'challenge'} onClick={() => setActiveTab('challenge')} collapsed={isCollapsed} />
             <NavItem icon={<UserCircle size={18} />} label="Icons" active={activeTab === 'icons'} onClick={() => setActiveTab('icons')} collapsed={isCollapsed} />
             <NavItem icon={<Award size={18} />} label="Tokens" active={activeTab === 'tokens'} onClick={() => setActiveTab('tokens')} collapsed={isCollapsed} />
+          </div>
+
+          <div className="nav-category">
+            {!isCollapsed && <div className="nav-category-title">Identity</div>}
+            <NavItem icon={<ShieldCheck size={18} />} label="Profile Bio" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} collapsed={isCollapsed} />
+            <NavItem icon={<Disc3 size={18} />} label="Music Sync" active={activeTab === 'music'} onClick={() => setActiveTab('music')} collapsed={isCollapsed} />
             <NavItem icon={<FolderOpen size={18} />} label="Presets" active={activeTab === 'presets'} onClick={() => setActiveTab('presets')} collapsed={isCollapsed} />
           </div>
 
           <div className="nav-category">
-            {!isCollapsed && <div className="nav-category-title">Enhancements</div>}
-            <NavItem icon={<Trophy size={18} />} label="Rank Overrides" active={activeTab === 'rank'} onClick={() => setActiveTab('rank')} collapsed={isCollapsed} />
-            <NavItem icon={<PanelsTopLeft size={18} />} label="Overview Cards" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} collapsed={isCollapsed} />
-            <NavItem icon={<Gem size={18} />} label="Challenge Level" active={activeTab === 'challenge'} onClick={() => setActiveTab('challenge')} collapsed={isCollapsed} />
-            <NavItem icon={<Disc3 size={18} />} label="Music Sync" active={activeTab === 'music'} onClick={() => setActiveTab('music')} collapsed={isCollapsed} />
-          </div>
-
-          <div className="nav-category">
-            {!isCollapsed && <div className="nav-category-title">Social</div>}
+            {!isCollapsed && <div className="nav-category-title">Tools</div>}
             <NavItem icon={<UserMinus size={18} />} label="Friends" active={activeTab === 'friends'} onClick={() => setActiveTab('friends')} collapsed={isCollapsed} />
             <NavItem icon={<Users size={18} />} label="Lobby Manager" active={activeTab === 'lobby'} onClick={() => setActiveTab('lobby')} collapsed={isCollapsed} />
-          </div>
-
-          <div className="nav-category">
-            {!isCollapsed && <div className="nav-category-title">System</div>}
             <NavItem icon={<Terminal size={18} />} label="System Logs" active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} collapsed={isCollapsed} />
             <NavItem icon={<Settings size={18} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} hasUpdate={!!latestVersion && clientVersion !== latestVersion} collapsed={isCollapsed} />
           </div>
@@ -248,6 +272,13 @@ function App() {
       </nav>
 
       <div className="main-container">
+        <div className="workspace-header">
+          <div>
+            <span className="workspace-kicker">Workspace</span>
+            <strong>{TAB_TITLES[activeTab]}</strong>
+          </div>
+          <span className="workspace-mode">LIVE CLIENT EDITOR</span>
+        </div>
         <main className="content-area">
           {activeTab === 'home' && <ErrorBoundary name="Home"><HomeTab lcu={lcu} clientVersion={clientVersion} setActiveTab={setActiveTab} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'profile' && <ErrorBoundary name="Profile"><ProfileTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} musicSyncActive={musicBio.enabled} /></ErrorBoundary>}
@@ -265,15 +296,6 @@ function App() {
           {activeTab === 'settings' && <ErrorBoundary name="Settings"><SettingsTab isAutostartEnabled={isAutostartEnabled} setIsAutostartEnabled={setIsAutostartEnabled} minimizeToTray={minimizeToTray} toggleMinimizeToTray={toggleMinimizeToTray} latestVersion={latestVersion} clientVersion={clientVersion} addLog={addLog} showToast={showToast} lcuRequest={lcuRequest} /></ErrorBoundary>}
         </main>
 
-        <footer className="status-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className={`status-dot ${lcu ? 'online' : 'offline'}`}></div>
-            <span style={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.7rem' }}>{lcu ? 'LCU Connected' : 'Waiting...'}</span>
-          </div>
-          <div style={{ marginLeft: 'auto', opacity: 0.5, fontSize: '0.65rem', letterSpacing: '2px' }}>
-            LEAGUE PROFILE TOOL v{clientVersion}
-          </div>
-        </footer>
       </div>
 
       {message.text && (
@@ -287,18 +309,18 @@ function App() {
 
 function NavItem({ icon, label, active, onClick, hasUpdate, collapsed }: Readonly<{ icon: React.ReactNode, label: string, active: boolean, onClick: () => void, hasUpdate?: boolean, collapsed?: boolean }>) {
   return (
-    <div 
+    <button
+      type="button"
       className={`nav-item ${active ? 'active' : ''} ${collapsed ? 'collapsed' : ''}`} 
       onClick={onClick} 
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()} 
-      role="tab" 
-      tabIndex={0}
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
       title={collapsed ? label : undefined}
     >
       <div className="nav-item-icon">{icon}</div>
-      {!collapsed && <span>{label}</span>}
-      {hasUpdate && <div className="nav-update-beacon"></div>}
-    </div>
+      {!collapsed && <span className="nav-item-label">{label}</span>}
+      {hasUpdate && <div className="nav-update-beacon" aria-label="Update available"></div>}
+    </button>
   );
 }
 

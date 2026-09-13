@@ -133,29 +133,31 @@ const ChallengeLevelTab: React.FC<ChallengeLevelTabProps> = ({ lcu, showToast, a
     const color = TIER_COLORS[crystalLevel] || TIER_COLORS.NONE;
 
     return (
-        <div className="tab-content fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '0 20px 40px' }}>
-            <div style={{ marginBottom: '20px', flexShrink: 0 }}>
-                <h2 id="challenge-level-title" style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+        <div className="tab-content fadeIn ui-page">
+            <div className="ui-page-header">
+                <div className="ui-page-header__copy">
+                <h2 id="challenge-level-title" className="ui-page-header__title">
                     Challenge Level
                 </h2>
-                <p style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                <p className="ui-page-header__description">
                     Customize the crystal tier and challenge score shown on your profile.
                 </p>
+                </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0 }}>
-                <section className="card" aria-labelledby="challenge-level-title" style={{ padding: '20px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="ui-page-stack">
+                <section className="card ui-panel" aria-labelledby="challenge-level-title">
+                    <div className="ui-section-header">
+                        <div className="ui-section-header__icon">
                             <Gem size={16} style={{ color: 'var(--hextech-gold)' }} />
                         </div>
-                        <div>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Crystal Tier</div>
-                            <div style={{ marginTop: '2px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Choose the crystal displayed by the League Client.</div>
+                        <div className="ui-section-header__copy">
+                            <h3 className="ui-section-header__title">Crystal Tier</h3>
+                            <p className="ui-section-header__description">Choose the crystal displayed by the League Client.</p>
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
+                    <div className="challenge-tier-grid">
                         {CRYSTAL_TIERS.map(tier => {
                             const isActive = crystalLevel === tier;
                             const tierColor = TIER_COLORS[tier] || TIER_COLORS.NONE;
@@ -186,8 +188,8 @@ const ChallengeLevelTab: React.FC<ChallengeLevelTabProps> = ({ lcu, showToast, a
                     </div>
                 </section>
 
-                <section className="card" style={{ padding: '20px 24px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(190px, 0.65fr) minmax(0, 1.35fr)', gap: '24px', alignItems: 'center' }}>
+                <section className="card ui-panel">
+                    <div className="challenge-summary-grid">
                         <div aria-label="Challenge level preview" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
                             <div style={{ width: '54px', height: '54px', borderRadius: '14px', background: `${color}14`, border: `1px solid ${color}55`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 22px ${color}18`, flexShrink: 0 }}>
                                 <Gem size={28} />
@@ -221,7 +223,7 @@ const ChallengeLevelTab: React.FC<ChallengeLevelTabProps> = ({ lcu, showToast, a
                                 <small style={{ display: 'block', marginTop: '6px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Total score displayed alongside the crystal.</small>
                             </label>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center', marginTop: '12px' }}>
+                            <div className="challenge-action-row ui-inline-actions">
                                 <button
                                     type="button"
                                     onClick={() => fetchCurrentData(true)}

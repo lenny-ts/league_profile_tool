@@ -13,6 +13,8 @@
     "core:tray:default",
     "core:window:allow-hide",
     "core:window:allow-show",
+    "core:window:allow-set-size",
+    "core:window:allow-center",
     "notification:default",
     "autostart:default",
     "log:default",

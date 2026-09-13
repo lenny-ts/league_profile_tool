@@ -167,6 +167,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ lcu, showToast, addLog, lcuRequ
                     {/* Custom Toggle Switch */}
                     <button
                         type="button"
+                        aria-label="Use Music Sync idle text as bio"
+                        aria-pressed={useIdleAsBio}
                         onClick={() => toggleUseIdleAsBio(!useIdleAsBio)}
                         disabled={!lcu || loading}
                         style={{
@@ -192,6 +194,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ lcu, showToast, addLog, lcuRequ
                     {useIdleAsBio ? (
                         <AutoExpandingTextarea
                             id="idle-bio-input"
+                            aria-label="Status message"
                             value={musicBio.idleText}
                             onChange={(e) => {
                                 bioDirtyRef.current = true;
@@ -206,6 +209,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ lcu, showToast, addLog, lcuRequ
                     ) : (
                         <AutoExpandingTextarea
                             id="bio-input"
+                            aria-label="Status message"
                             value={bio}
                             onChange={(e) => { bioDirtyRef.current = true; setBio(e.target.value); }}
                             placeholder="Tell your friends what you're up to..."

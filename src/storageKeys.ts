@@ -25,6 +25,7 @@ export const SAVED_CHALLENGE_POINTS_KEY  = "profile_saved_challenge_points_v1";
 export const SAVED_ENFORCE_OFFLINE_KEY = "profile_enforce_offline_v1"; // Legacy (will be mapped to auto enforce)
 export const SAVED_AUTO_ENFORCE_KEY = "profile_auto_enforce_v1";
 export const SAVED_USE_IDLE_AS_BIO_KEY = "profile_use_idle_as_bio_v1";
+export const SAVED_WINDOW_SIZE_KEY = "window_size_preset_v1";
 
 // Music Sync
 export const MUSIC_BIO_SETTINGS_KEY = "music_bio_settings_v1";
@@ -67,6 +68,7 @@ export const ALL_SAVED_KEYS: string[] = [
     SAVED_ENFORCE_OFFLINE_KEY,
     SAVED_AUTO_ENFORCE_KEY,
     SAVED_USE_IDLE_AS_BIO_KEY,
+    SAVED_WINDOW_SIZE_KEY,
     MUSIC_BIO_SETTINGS_KEY,
     PROFILE_ICONS_KEY,
     ICON_DATA_VERSION_KEY,

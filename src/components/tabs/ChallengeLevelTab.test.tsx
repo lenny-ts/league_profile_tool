@@ -36,6 +36,8 @@ describe('ChallengeLevelTab', () => {
 
         expect(screen.getByText('Challenge Level')).toBeDefined();
         expect(screen.getByLabelText('Challenge level preview')).toBeDefined();
+        expect(screen.getByLabelText('Challenge level preview').parentElement).toHaveClass('challenge-summary-grid');
+        expect(screen.getByText('APPLY CHALLENGE LEVEL').parentElement).toHaveClass('challenge-action-row');
         await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Challenge level synced successfully.'));
     });
 

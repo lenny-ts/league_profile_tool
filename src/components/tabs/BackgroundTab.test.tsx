@@ -100,18 +100,21 @@ describe('BackgroundTab', () => {
 
         fireEvent.click(screen.getByRole('tab', { name: 'Custom / GIF' }));
         fireEvent.click(screen.getByText('Choose File'));
-        expect(await screen.findByAltText('Custom background preview')).toBeDefined();
+        const preview = await screen.findByAltText('Custom background preview');
+        fireEvent.change(screen.getByLabelText('Custom background fit'), { target: { value: 'contain' } });
         fireEvent.change(screen.getByLabelText('Custom background position'), { target: { value: 'top' } });
         fireEvent.change(screen.getByLabelText('Custom background darken'), { target: { value: '35' } });
+        expect(preview).toHaveStyle({ objectFit: 'contain', objectPosition: 'top' });
+        expect(document.querySelector('.custom-background-preview-dim')).toHaveStyle({ opacity: '0.35' });
         fireEvent.click(screen.getByText('APPLY CUSTOM'));
 
         await waitFor(() => {
             expect(mockInvoke).toHaveBeenCalledWith('install_pengu_plugin');
             expect(mockInvoke).toHaveBeenCalledWith('save_custom_background', {
-                sourcePath: 'C:\\images\\animated.gif', fit: 'cover', position: 'top', dim: 35,
+                sourcePath: 'C:\\images\\animated.gif', fit: 'contain', position: 'top', dim: 35,
             });
             expect(JSON.parse(localStorage.getItem('profile_saved_custom_background_v1') || '{}')).toEqual({
-                active: true, fileName: 'animated.gif', fit: 'cover', position: 'top', dim: 35,
+                active: true, fileName: 'animated.gif', fit: 'contain', position: 'top', dim: 35,
             });
         });
     });

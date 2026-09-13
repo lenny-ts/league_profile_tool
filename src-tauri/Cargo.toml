@@ -1,6 +1,6 @@
 [package]
 name = "league-profile-tool"
-version = "1.13.0"
+version = "2.0.0"
 description = "A custom application"
 authors = ["Lenny"]
 edition = "2021"

@@ -19,10 +19,21 @@ vi.mock('@tauri-apps/api/app', () => ({
 }));
 
 vi.mock('@tauri-apps/api/window', () => ({
+    LogicalSize: class LogicalSize {
+        width: number;
+        height: number;
+        constructor(width: number, height: number) {
+            this.width = width;
+            this.height = height;
+        }
+    },
+    currentMonitor: vi.fn().mockResolvedValue(null),
     getCurrentWindow: vi.fn().mockReturnValue({
         onCloseRequested: vi.fn().mockResolvedValue(() => {}),
         minimize: vi.fn(),
         close: vi.fn(),
+        setSize: vi.fn().mockResolvedValue(undefined),
+        center: vi.fn().mockResolvedValue(undefined),
     }),
 }));
 
@@ -35,6 +46,12 @@ describe('App Component', () => {
     it('should render application layout and title', async () => {
         render(<App />);
         expect(await screen.findByText('Home')).toBeDefined();
+        expect(screen.getByText('LPT CONTROL CENTER')).toBeDefined();
+        expect(screen.getByText('Dashboard')).toBeDefined();
+        const homeNav = screen.getByRole('button', { name: 'Home' });
+        const firstCategory = homeNav.closest('nav')?.querySelector('.nav-category-title');
+        expect(firstCategory).not.toBeNull();
+        expect(homeNav.compareDocumentPosition(firstCategory as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('should initialize and show version', async () => {
@@ -56,7 +73,7 @@ describe('App Component', () => {
         const bioTabBtn = await screen.findByText(/Profile Bio/i);
         fireEvent.click(bioTabBtn);
 
-        expect(await screen.findByText('Profile Bio & Status')).toBeDefined();
+        expect(await screen.findByRole('heading', { name: 'Profile Bio & Status' })).toBeDefined();
     });
 
     it('should open Overview Cards as a separate tab', async () => {

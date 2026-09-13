@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-13
+
+### Added
+- **Custom profile backgrounds**: Install static or animated PNG, JPG, WEBP, and GIF backgrounds through the bundled PenguLoader integration.
+- **Overview customization**: Override Mastery, Clash, Honor, banner, and profile Overview rank cards with a persistent live preview.
+- **Window size presets**: Switch between compact, recommended, and large layouts from Settings with monitor-aware sizing.
+
+### Changed
+- **Compact Control Center**: Rebuilt the application shell with grouped navigation, a global client status header, denser controls, and responsive layouts.
+- **Unified editors**: Standardized page headers, section headers, field layouts, panels, and action docks across Background, Overview, Rank, Challenge, and Settings.
+- **Accurate previews**: Background darkening and Overview champion icons, mastery levels, and automatic states now update directly in their previews.
+- **Responsive forms**: Rank, Challenge, Overview, and Settings controls now reflow cleanly in narrow windows.
+- **Feature priority**: Moved Background, Overview, Rank, and Challenge tools to the top of the customization workflow.
+- **Default window**: Increased the default workspace to 1200 x 800 with a 960 x 650 minimum size.
+
+### Tests
+- Updated profile interaction coverage for the button-based availability controls. The complete frontend suite passes with 191 tests.
+
 ## [1.13.0] - 2026-09-02
 
 ### Added

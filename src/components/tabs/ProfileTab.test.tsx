@@ -36,7 +36,7 @@ describe('ProfileTab', () => {
         const props = createProps();
         render(<ProfileTab {...props} />);
 
-        const textarea = await screen.findByLabelText('New Status Message');
+        const textarea = await screen.findByRole('textbox', { name: 'Status message' });
         fireEvent.change(textarea, { target: { value: 'New Bio' } });
 
         const applyBtn = screen.getByText('APPLY BIO');
@@ -52,11 +52,7 @@ describe('ProfileTab', () => {
         const props = createProps();
         render(<ProfileTab {...props} />);
 
-        const select = await screen.findByLabelText('Chat Availability');
-        fireEvent.change(select, { target: { value: 'mobile' } });
-
-        const applyBtn = screen.getByText('APPLY');
-        fireEvent.click(applyBtn);
+        fireEvent.click(await screen.findByRole('button', { name: 'MOBILE' }));
 
         await waitFor(() => {
             expect(props.lcuRequest).toHaveBeenCalledWith("PUT", "/lol-chat/v1/me", expect.anything());
@@ -68,7 +64,7 @@ describe('ProfileTab', () => {
         vi.mocked(invoke).mockRejectedValueOnce(new Error("Fail"));
         render(<ProfileTab {...props} />);
 
-        const textarea = await screen.findByLabelText('New Status Message');
+        const textarea = await screen.findByRole('textbox', { name: 'Status message' });
         fireEvent.change(textarea, { target: { value: 'test' } });
 
         const applyBtn = screen.getByText('APPLY BIO');
@@ -87,8 +83,7 @@ describe('ProfileTab', () => {
 
         render(<ProfileTab {...props} />);
 
-        const applyBtn = await screen.findByText('APPLY');
-        fireEvent.click(applyBtn);
+        fireEvent.click(await screen.findByRole('button', { name: 'ONLINE' }));
 
         await waitFor(() => {
             expect(props.showToast).toHaveBeenCalledWith("Failed to update status", "error");
@@ -102,12 +97,15 @@ describe('ProfileTab', () => {
         expect(screen.getByText(/Start League of Legends to enable this feature/i)).toBeDefined();
     });
 
-    it('should handle unknown availability status mapping', async () => {
+    it('should keep known availability actions when the current status is unknown', async () => {
         const props = createProps();
         props.lcuRequest = vi.fn().mockResolvedValue({ availability: 'dnd', statusMessage: 'bio' });
 
         render(<ProfileTab {...props} />);
 
-        expect(await screen.findByText('DND')).toBeDefined();
+        expect(await screen.findByRole('button', { name: 'ONLINE' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'AWAY' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'MOBILE' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'OFFLINE' })).toBeDefined();
     });
 });

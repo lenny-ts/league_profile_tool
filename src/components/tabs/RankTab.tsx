@@ -197,26 +197,24 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
     const hasDivision = !["MASTER", "GRANDMASTER", "CHALLENGER"].includes(soloTier);
 
     return (
-        <div className="tab-content fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '0 20px 40px 20px' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '20px', flexShrink: 0 }}>
-                <h2 style={{ margin: '0 0 6px 0', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rank Override</h2>
-                <p style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>Customize your visible rank, queue, and profile overview.</p>
+        <div className="tab-content fadeIn ui-page">
+            <div className="ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Rank Override</h2>
+                    <p className="ui-page-header__description">Customize your visible rank, queue, and profile overview.</p>
+                </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0 }}>
+            <div className="ui-page-stack">
                 {/* Queue Card */}
-                <div className="card" style={{ padding: '20px 24px', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                        <div style={{ 
-                            width: '30px', height: '30px', borderRadius: '8px', 
-                            background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
+                <div className="card ui-panel">
+                    <div className="ui-section-header">
+                        <div className="ui-section-header__icon">
                             <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
                         </div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Queue</span>
+                        <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Queue</h3><p className="ui-section-header__description">Select which ranked queue to display.</p></div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                    <div className="rank-queue-grid">
                         {QUEUES.map(q => (
                             <button type="button"
                                 key={q.value}
@@ -239,17 +237,14 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
 
                 {/* Tier + Division Card */}
                 <div>
-                    <div className="card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexShrink: 0 }}>
-                            <div style={{ 
-                                width: '30px', height: '30px', borderRadius: '8px', 
-                                background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
+                    <div className="card ui-panel">
+                        <div className="ui-section-header">
+                            <div className="ui-section-header__icon">
                                 <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
                             </div>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Tier</span>
+                            <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Tier</h3><p className="ui-section-header__description">Choose the rank and division shown in the client.</p></div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div className="rank-tier-grid">
                             {TIERS.map(t => {
                                 const isActive = soloTier === t;
                                 const color = TIER_COLORS[t] || "#ffffff";
@@ -279,16 +274,13 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
                         </div>
                         {hasDivision && (
                             <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid var(--glass-border)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexShrink: 0 }}>
-                                    <div style={{
-                                        width: '30px', height: '30px', borderRadius: '8px',
-                                        background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
+                                <div className="ui-section-header">
+                                    <div className="ui-section-header__icon">
                                         <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
                                     </div>
-                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Division</span>
+                                    <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Division</h3></div>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                                <div className="rank-division-grid">
                                     {DIVISIONS.map(d => (
                                         <button type="button"
                                             key={d}
@@ -344,9 +336,8 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
                 </div>
 
                 {/* Bottom — PenguLoader Toggle + Actions */}
-                <div className="card" style={{ padding: '16px 20px', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                <div className="card ui-action-dock rank-action-dock">
+                        <div className="ui-action-dock__hint rank-overview-control">
                             <Monitor size={16} style={{ color: 'var(--hextech-gold)', flexShrink: 0 }} />
                             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Profile Overview</span>
                             <span style={{ 
@@ -378,7 +369,7 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
                             </button>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        <div className="ui-action-dock__actions">
                             <button type="button" className="primary-btn" onClick={applyChanges} disabled={!lcu || loading || fetching}
                                 style={{ padding: '9px 20px', fontSize: '0.85rem', borderRadius: '8px', whiteSpace: 'nowrap' }}>
                                 {loading ? '...' : 'APPLY'}
@@ -395,25 +386,21 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
                                 <RefreshCw size={13} className={fetching ? 'intel-spinner' : ''} /> Sync
                             </button>
                         </div>
-                    </div>
                 </div>
 
                 {/* PenguLoader Setup Guide */}
-                <div className="card" style={{ padding: '20px 24px', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                        <div style={{ 
-                            width: '30px', height: '30px', borderRadius: '8px', 
-                            background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
+                <div className="card ui-panel">
+                    <div className="ui-section-header">
+                        <div className="ui-section-header__icon">
                             <Puzzle size={16} style={{ color: 'var(--hextech-gold)' }} />
                         </div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Profile Overview — Setup Guide</span>
+                        <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Profile Overview Setup Guide</h3><p className="ui-section-header__description">Three steps to enable the client-side rank card.</p></div>
                     </div>
                     <p style={{ margin: '0 0 14px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                         The Profile Overview shows your rank in the League client's profile card and tooltip.
                         This feature requires <a href="https://github.com/PenguLoader/PenguLoader" target="_blank" rel="noreferrer" style={{ color: 'var(--hextech-gold)' }}>PenguLoader</a> and a small plugin installed by this app.
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div className="rank-setup-grid">
                         <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--hextech-gold)', marginBottom: '6px' }}>1. Install PenguLoader</div>
                             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>

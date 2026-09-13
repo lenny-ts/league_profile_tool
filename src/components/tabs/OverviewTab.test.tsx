@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import OverviewTab from './OverviewTab';
 
 const mockInvoke = vi.fn();
@@ -16,7 +16,7 @@ describe('OverviewTab', () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
             ok: true,
             json: () => Promise.resolve([
-                { id: 266, name: 'Aatrox' },
+                { id: 266, name: 'Aatrox', squarePortraitPath: '/lol-game-data/assets/v1/champion-icons/266.png' },
                 { id: 103, name: 'Ahri' },
                 { id: 86, name: 'Garen' },
             ]),
@@ -47,6 +47,12 @@ describe('OverviewTab', () => {
         expect(screen.getByText('Clash Trophy')).toBeDefined();
         expect(screen.getByText('Clash Banner')).toBeDefined();
         expect(screen.getByText('APPLY OVERVIEW')).toBeDefined();
+        expect(screen.getByText('Overview Modules')).toBeDefined();
+        expect(screen.queryByText('Summoner')).toBeNull();
+        const preview = within(screen.getByLabelText('Overview live preview'));
+        expect(preview.getByText('Automatic bracket / tier')).toBeDefined();
+        expect(preview.getByText('Automatic level')).toBeDefined();
+        expect(screen.getByLabelText('Trophy Bracket').closest('div')).toHaveClass('overview-trophy-meta-grid');
         expect((await screen.findAllByText('AATROX')).length).toBe(3);
     });
 
@@ -59,10 +65,14 @@ describe('OverviewTab', () => {
         fireEvent.change(screen.getByLabelText('Primary / Center Mastery Level'), { target: { value: '37' } });
         fireEvent.change(screen.getByLabelText('Left Hover Mastery Level'), { target: { value: '8' } });
         fireEvent.change(screen.getByLabelText('Right Hover Mastery Level'), { target: { value: '15' } });
+        expect(screen.getByLabelText('Center mastery level')).toHaveTextContent('37');
+        expect(screen.getByLabelText('Left mastery level')).toHaveTextContent('8');
+        expect(screen.getByLabelText('Right mastery level')).toHaveTextContent('15');
         await screen.findAllByText('AATROX');
         fireEvent.change(screen.getByLabelText('Primary / Center Champion'), { target: { value: '266' } });
         fireEvent.change(screen.getByLabelText('Left Hover Champion'), { target: { value: '103' } });
         fireEvent.change(screen.getByLabelText('Right Hover Champion'), { target: { value: '86' } });
+        expect((await screen.findByRole('img', { name: 'Aatrox' })).getAttribute('src')).toContain('/266.png');
         fireEvent.change(screen.getByLabelText('Clash Trophy'), { target: { value: 'Demacia' } });
         fireEvent.change(screen.getByLabelText('Trophy Bracket'), { target: { value: '8' } });
         fireEvent.change(screen.getByLabelText('Trophy Tier'), { target: { value: '3' } });

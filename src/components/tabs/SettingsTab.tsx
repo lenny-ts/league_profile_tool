@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, ExternalLink } from 'lucide-react';
+import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, ExternalLink, AppWindow } from 'lucide-react';
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY, PENGU_OVERVIEW_OVERRIDE_KEY, SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY, SAVED_OVERVIEW_CARDS_KEY, SAVED_CUSTOM_BACKGROUND_KEY } from '../../storageKeys';
+import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY, PENGU_OVERVIEW_OVERRIDE_KEY, SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY, SAVED_OVERVIEW_CARDS_KEY, SAVED_CUSTOM_BACKGROUND_KEY, SAVED_WINDOW_SIZE_KEY } from '../../storageKeys';
 import { patchChatLol } from '../../utils/chatMe';
+import { applyWindowSizePreset, getSavedWindowSizePreset, WINDOW_SIZE_PRESETS, WindowSizePreset } from '../../utils/windowSize';
 
 const MAX_STORAGE_VALUE_LENGTH = 10000;
 
@@ -35,6 +36,21 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
     const [autoEnforce, setAutoEnforce] = useState(() => localStorage.getItem(SAVED_AUTO_ENFORCE_KEY) === 'true');
     const [pluginInstalled, setPluginInstalled] = useState(() => localStorage.getItem(PENGU_PLUGIN_INSTALLED_KEY) === 'true');
+    const [windowSizePreset, setWindowSizePreset] = useState<WindowSizePreset>(getSavedWindowSizePreset);
+
+    const changeWindowSize = async (value: WindowSizePreset) => {
+        try {
+            await applyWindowSizePreset(value);
+            localStorage.setItem(SAVED_WINDOW_SIZE_KEY, value);
+            setWindowSizePreset(value);
+            const preset = WINDOW_SIZE_PRESETS.find(item => item.value === value);
+            addLog(`Window size changed to ${preset?.width}x${preset?.height}.`);
+            showToast?.("Window size updated!", "success");
+        } catch (err) {
+            addLog(`Window resize failed: ${err}`);
+            showToast?.("Window resize failed", "error");
+        }
+    };
 
     const toggleAutoEnforce = (checked: boolean) => {
         setAutoEnforce(checked);
@@ -260,34 +276,26 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         }
     };
 
-    const settingsRowStyle: React.CSSProperties = {
-        width: '100%',
-        margin: 0,
-        padding: '14px 16px',
-        border: '1px solid var(--glass-border)',
-        borderRadius: '10px',
-        background: 'rgba(0, 0, 0, 0.2)',
-        textAlign: 'left',
-    };
-
     return (
-        <div className="tab-content fadeIn" style={{ padding: '0 20px 40px' }}>
-            <div style={{ marginBottom: '8px' }}>
-                <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Settings</h2>
-                <p style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>Configure startup behavior, backups, integrations, and saved profile data.</p>
+        <div className="tab-content fadeIn ui-page">
+            <div className="ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Settings</h2>
+                    <p className="ui-page-header__description">Configure startup behavior, backups, integrations, and saved profile data.</p>
+                </div>
             </div>
 
-            <div className="card" style={{ padding: '20px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="card ui-panel">
+                <div className="ui-section-header">
+                    <div className="ui-section-header__icon">
                         <Cpu size={16} style={{ color: 'var(--hextech-gold)' }} />
                     </div>
-                    <div>
-                        <h3 className="card-title" style={{ margin: 0, fontSize: '0.95rem' }}>Technical Settings</h3>
-                        <p className="settings-desc" style={{ margin: '2px 0 0' }}>Choose how the application behaves in Windows and with the League Client.</p>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Technical Settings</h3>
+                        <p className="ui-section-header__description">Choose how the application behaves in Windows and with the League Client.</p>
                     </div>
                 </div>
-                <button type="button" className="settings-row" onClick={async () => {
+                <button type="button" className="settings-row ui-settings-row" onClick={async () => {
                     const newState = !isAutostartEnabled;
                     try {
                         if (newState) await enable(); else await disable();
@@ -297,7 +305,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                         addLog(`Failed to toggle auto-launch: ${err}`);
                         showToast?.(`Failed to toggle auto-launch: ${err}`, "error");
                     }
-                }} style={settingsRowStyle}>
+                }}>
                     <div className="settings-info">
                         <span className="settings-label">Auto-launch</span>
                         <p className="settings-desc">Launch the app automatically when your PC starts.</p>
@@ -309,7 +317,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </span>
                 </button>
 
-                <button type="button" className="settings-row" onClick={toggleMinimizeToTray} style={{ ...settingsRowStyle, marginTop: '10px' }}>
+                <button type="button" className="settings-row ui-settings-row" onClick={toggleMinimizeToTray}>
                     <div className="settings-info">
                         <span className="settings-label">Minimize to Tray</span>
                         <p className="settings-desc">Close button will minimize the app to the system tray.</p>
@@ -321,7 +329,18 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </span>
                 </button>
 
-                <button type="button" className="settings-row" onClick={() => toggleAutoEnforce(!autoEnforce)} style={{ ...settingsRowStyle, marginTop: '10px' }}>
+                <div className="settings-row ui-settings-row settings-window-size-row">
+                    <AppWindow size={18} style={{ color: 'var(--hextech-gold)', flexShrink: 0 }} />
+                    <div className="settings-info">
+                        <label className="settings-label" htmlFor="window-size-preset">Default Window Size</label>
+                        <p className="settings-desc">Applied immediately and restored whenever the app starts.</p>
+                    </div>
+                    <select id="window-size-preset" className="window-size-select" value={windowSizePreset} onChange={(event) => changeWindowSize(event.target.value as WindowSizePreset)}>
+                        {WINDOW_SIZE_PRESETS.map(preset => <option key={preset.value} value={preset.value}>{preset.label} - {preset.width} x {preset.height}</option>)}
+                    </select>
+                </div>
+
+                <button type="button" className="settings-row ui-settings-row" onClick={() => toggleAutoEnforce(!autoEnforce)}>
                     <div className="settings-info">
                         <span className="settings-label">Auto-Restore Profile</span>
                         <p className="settings-desc">Automatically re-apply profile overrides (rank, icons, status) when the League Client opens.</p>
@@ -344,13 +363,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </label>
                             ))}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                        <div className="settings-confirm-actions" style={{ marginTop: '14px' }}>
                             <button type="button" className="ghost-btn" style={{ color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px' }} onClick={clearAllSettings}><Check size={14} />Clear Selected</button>
                             <button type="button" className="ghost-btn" onClick={() => setShowResetConfirm(false)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px' }}><X size={14} />Cancel</button>
                         </div>
                     </div>
                 ) : (
-                    <button type="button" className="settings-row" onClick={() => setShowResetConfirm(true)} style={{ ...settingsRowStyle, marginTop: '10px', borderColor: 'rgba(239, 68, 68, 0.14)' }}>
+                    <button type="button" className="settings-row ui-settings-row settings-row--danger" onClick={() => setShowResetConfirm(true)}>
                         <div className="settings-info">
                             <span className="settings-label">Clear Saved Data</span>
                             <p className="settings-desc">Reset profile overrides, rank, tokens, status, icon &amp; more</p>
@@ -360,18 +379,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 )}
             </div>
 
-            <div className="card" style={{ padding: '20px 24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div className="card ui-panel">
+                <div className="ui-section-header settings-backup-row" style={{ marginBottom: 0 }}>
+                    <div className="ui-section-header__icon">
                             <Download size={16} style={{ color: 'var(--hextech-gold)' }} />
-                        </div>
-                        <div>
-                            <h3 className="card-title" style={{ margin: 0, fontSize: '0.95rem' }}>Backup &amp; Restore</h3>
-                            <p className="settings-desc" style={{ margin: '2px 0 0' }}>Export your saved profile settings or restore them from a JSON backup.</p>
-                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Backup &amp; Restore</h3>
+                        <p className="ui-section-header__description">Export your saved profile settings or restore them from a JSON backup.</p>
+                    </div>
+                    <div className="ui-section-header__actions settings-backup-actions">
                         <button type="button" className="ghost-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px' }} onClick={exportSettings}>
                             <Download size={15} /> Export
                         </button>
@@ -382,18 +399,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
             </div>
 
-            <div className="card" style={{ padding: '20px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="card ui-panel">
+                <div className="ui-section-header settings-integration-header">
+                    <div className="ui-section-header__icon">
                             <Puzzle size={16} style={{ color: 'var(--hextech-gold)' }} />
-                        </div>
-                        <div>
-                            <h3 className="card-title" style={{ margin: 0, fontSize: '0.95rem' }}>Pengu Loader Integration</h3>
-                            <p className="settings-desc" style={{ margin: '2px 0 0' }}>Required to display custom ranks in the League profile overview.</p>
-                        </div>
                     </div>
-                    <span style={{ padding: '4px 9px', borderRadius: '999px', background: pluginInstalled ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: pluginInstalled ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)', color: pluginInstalled ? '#22c55e' : '#f59e0b', fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Pengu Loader Integration</h3>
+                        <p className="ui-section-header__description">Required to display custom ranks in the League profile overview.</p>
+                    </div>
+                    <span className="ui-section-header__actions" style={{ padding: '4px 9px', borderRadius: '999px', background: pluginInstalled ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: pluginInstalled ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)', color: pluginInstalled ? '#22c55e' : '#f59e0b', fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         {pluginInstalled ? 'PLUGIN READY' : 'SETUP REQUIRED'}
                     </span>
                 </div>
@@ -405,7 +420,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     )}
                 </p>
                 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="settings-integration-actions">
                     <button 
                         type="button" 
                         className="ghost-btn" 
@@ -477,21 +492,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                 </div>
             )}
-
-            <div className="card" style={{ padding: '16px 20px', background: 'rgba(59, 130, 246, 0.04)', borderColor: 'rgba(59, 130, 246, 0.15)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Cpu size={16} style={{ color: 'var(--hextech-gold)' }} />
-                    </div>
-                    <div>
-                        <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.88rem' }}>Bridge Interface</h4>
-                        <p style={{ margin: '3px 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            High-performance LCU communication layer via Tauri v2 Core.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
 
         </div>
     );

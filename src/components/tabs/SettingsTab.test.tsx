@@ -5,6 +5,8 @@ import SettingsTab from './SettingsTab';
 const mockInvoke = vi.fn();
 const mockOpen = vi.fn();
 const mockSave = vi.fn();
+const mockSetSize = vi.fn().mockResolvedValue(undefined);
+const mockCenter = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@tauri-apps/plugin-autostart', () => ({
     enable: vi.fn(),
@@ -18,6 +20,22 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
+vi.mock('@tauri-apps/api/window', () => ({
+    LogicalSize: class LogicalSize {
+        width: number;
+        height: number;
+        constructor(width: number, height: number) {
+            this.width = width;
+            this.height = height;
+        }
+    },
+    currentMonitor: vi.fn().mockResolvedValue(null),
+    getCurrentWindow: vi.fn().mockReturnValue({
+        setSize: (...args: unknown[]) => mockSetSize(...args),
+        center: (...args: unknown[]) => mockCenter(...args),
+    }),
 }));
 
 describe('SettingsTab', () => {
@@ -36,6 +54,25 @@ describe('SettingsTab', () => {
         expect(screen.getByText('Technical Settings')).toBeDefined();
         expect(screen.getByText('Auto-launch')).toBeDefined();
         expect(screen.getByText('Minimize to Tray')).toBeDefined();
+        expect(screen.getByLabelText('Default Window Size')).toHaveValue('recommended');
+        expect(screen.queryByText('Bridge Interface')).toBeNull();
+        expect(screen.getByLabelText('Default Window Size').closest('.settings-row')).toHaveClass('settings-window-size-row');
+        expect(screen.getByText('Export').parentElement).toHaveClass('settings-backup-actions');
+    });
+
+    it('should apply and persist the selected default window size', async () => {
+        localStorage.clear();
+        mockSetSize.mockClear();
+        mockCenter.mockClear();
+        render(<SettingsTab {...mockProps} showToast={vi.fn()} />);
+
+        fireEvent.change(screen.getByLabelText('Default Window Size'), { target: { value: 'compact' } });
+
+        await waitFor(() => {
+            expect(mockSetSize).toHaveBeenCalledWith(expect.objectContaining({ width: 1000, height: 700 }));
+            expect(mockCenter).toHaveBeenCalled();
+            expect(localStorage.getItem('window_size_preset_v1')).toBe('compact');
+        });
     });
 
     it('should have accessible labels for switches', () => {
