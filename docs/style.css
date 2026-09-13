@@ -490,10 +490,29 @@ img { max-width: 100%; display: block; }
    SHOWCASE — Feature Demos
    =========================== */
 .showcase {
+  display: flex;
+  flex-direction: column;
   padding: 2rem 1.5rem 4rem;
   max-width: 1100px;
   margin: 0 auto;
 }
+
+.showcase-background { order: 1; }
+.showcase-overview { order: 2; }
+.showcase-rank { order: 3; }
+.showcase-pengu { order: 4; }
+.showcase-challenge { order: 5; }
+.showcase-icons { order: 6; }
+.showcase-tokens { order: 7; }
+.showcase-presets { order: 8; }
+.showcase-music { order: 9; }
+.showcase-bio { order: 10; }
+.showcase-status { order: 11; }
+.showcase-music-bio { order: 12; }
+.showcase-friends { order: 13; }
+.showcase-lobby { order: 14; }
+.showcase-logs { order: 15; }
+.showcase-settings { order: 16; }
 
 .show-row {
   display: grid;
