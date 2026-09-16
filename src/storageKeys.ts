@@ -40,6 +40,8 @@ export const PRESETS_LS_KEY = "profile_presets_list_v1";
 // Pengu Loader
 export const PENGU_PLUGIN_INSTALLED_KEY = "pengu_plugin_installed_v1";
 export const PENGU_OVERVIEW_OVERRIDE_KEY = "pengu_overview_override_v1";
+// Theme drafts use their own CSS import/export; the profile importer truncates values.
+export const CLIENT_THEME_KEY = "client_theme_v1";
 
 // Analytics (intentionally NOT in ALL_SAVED_KEYS — survives Clear All)
 export const ANALYTICS_ID_KEY = "lp_analytics_id";

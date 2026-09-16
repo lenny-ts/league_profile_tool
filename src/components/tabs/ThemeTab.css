@@ -1,0 +1,24 @@
+.theme-editor-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+.theme-field-label { display: block; margin: 14px 0 8px; }
+.theme-name-input, .theme-css-editor { width: 100%; padding: 10px; color: var(--text-primary); background: #09090b; border: 1px solid var(--shell-border); border-radius: 6px; }
+.theme-css-editor { min-height: 320px; resize: vertical; font: 13px/1.6 monospace; tab-size: 2; }
+.theme-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.theme-page .ghost-btn { display: inline-flex; align-items: center; gap: 6px; }
+.theme-page button:disabled { opacity: .5; cursor: wait; }
+.theme-status-badge { font-size: 12px; color: var(--text-secondary); }
+.theme-status-badge.active { color: #86efac; }
+.theme-guide-list > div { display: flex; gap: 8px; margin-bottom: 14px; }
+.theme-guide-list svg { flex-shrink: 0; }
+.theme-guide-code { padding: 12px; background: #09090b; white-space: pre-wrap; overflow-wrap: anywhere; }
+.theme-guide-note { font-size: 13px; line-height: 1.6; color: var(--text-secondary); overflow-wrap: anywhere; }
+.theme-preview { width: 100%; height: 390px; border: 1px solid var(--shell-border); border-radius: 12px; }
+.theme-artwork { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; margin-bottom: 12px; }
+.theme-library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+.theme-library-card { padding: 14px; border: 1px solid var(--shell-border); border-radius: 8px; background: var(--shell-surface); color: var(--text-primary); min-width: 0; overflow-wrap: anywhere; }
+button.theme-library-card { cursor: pointer; text-align: left; }
+.theme-library-card[aria-pressed="true"] { border-color: var(--hextech-gold); }
+.theme-swatches { display: flex; height: 36px; overflow: hidden; border-radius: 5px; margin-bottom: 12px; }
+.theme-swatches span { flex: 1; }
+.theme-personal-list { max-height: 340px; overflow-y: auto; }
+.theme-personal-list article { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 1100px) { .theme-editor-grid { grid-template-columns: minmax(0, 1fr); } }

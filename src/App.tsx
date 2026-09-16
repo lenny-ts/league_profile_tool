@@ -47,6 +47,7 @@ import LogsTab from "./components/tabs/LogsTab";
 import TokensTab from "./components/tabs/TokensTab";
 import BackgroundTab from "./components/tabs/BackgroundTab";
 import SettingsTab from "./components/tabs/SettingsTab";
+import ThemeTab from "./components/tabs/ThemeTab";
 import LobbyTab from "./components/tabs/LobbyTab";
 import FriendManagerTab from "./components/tabs/FriendManagerTab";
 import PresetsTab from "./components/tabs/PresetsTab";
@@ -57,6 +58,7 @@ const TAB_TITLES: Record<string, string> = {
   home: "Dashboard",
   profile: "Profile Bio & Status",
   background: "Background",
+  themes: "Client Themes",
   overview: "Overview Cards",
   rank: "Rank Overrides",
   challenge: "Challenge Level",
@@ -241,6 +243,7 @@ function App() {
           <div className="nav-category">
             {!isCollapsed && <div className="nav-category-title">Customization</div>}
             <NavItem icon={<Image size={18} />} label="Background" active={activeTab === 'background'} onClick={() => setActiveTab('background')} collapsed={isCollapsed} />
+            <NavItem icon={<PanelsTopLeft size={18} />} label="Client Themes" active={activeTab === 'themes'} onClick={() => setActiveTab('themes')} collapsed={isCollapsed} />
             <NavItem icon={<PanelsTopLeft size={18} />} label="Overview Cards" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} collapsed={isCollapsed} />
             <NavItem icon={<Trophy size={18} />} label="Rank Overrides" active={activeTab === 'rank'} onClick={() => setActiveTab('rank')} collapsed={isCollapsed} />
             <NavItem icon={<Gem size={18} />} label="Challenge Level" active={activeTab === 'challenge'} onClick={() => setActiveTab('challenge')} collapsed={isCollapsed} />
@@ -284,6 +287,7 @@ function App() {
           {activeTab === 'profile' && <ErrorBoundary name="Profile"><ProfileTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} musicSyncActive={musicBio.enabled} /></ErrorBoundary>}
           {activeTab === 'friends' && <ErrorBoundary name="Friends"><FriendManagerTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'background' && <ErrorBoundary name="Background"><BackgroundTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
+          {activeTab === 'themes' && <ErrorBoundary name="Client Themes"><ThemeTab showToast={showToast} addLog={addLog} /></ErrorBoundary>}
           {activeTab === 'music' && <ErrorBoundary name="Music"><MusicTab lcu={lcu} musicBio={musicBio} setMusicBio={setMusicBio} showToast={showToast} addLog={addLog} applyIdleBio={applyIdleBio} /></ErrorBoundary>}
           {activeTab === 'tokens' && <ErrorBoundary name="Tokens"><TokensTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}
           {activeTab === 'presets' && <ErrorBoundary name="Presets"><PresetsTab lcu={lcu} showToast={showToast} addLog={addLog} lcuRequest={lcuRequest} /></ErrorBoundary>}

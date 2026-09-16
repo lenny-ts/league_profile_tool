@@ -1,4 +1,7 @@
 mod lcu;
+mod themes;
+use themes::{list_library_themes, save_library_theme, delete_library_theme};
+use themes::{save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme};
 
 use serde_json::json;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
@@ -590,7 +593,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
+        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_, _| {});

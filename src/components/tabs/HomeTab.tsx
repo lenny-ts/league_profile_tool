@@ -83,6 +83,7 @@ const HomeTab: React.FC<HomeTabProps> = ({ lcu, clientVersion, setActiveTab, lcu
             options: [
                 { id: 'profile', title: 'Profile Bio', desc: 'Update status message and biography.', icon: <Layout size={24} /> },
                 { id: 'background', title: 'Background', desc: 'Set any champion skin as your background.', icon: <Image size={24} /> },
+                { id: 'themes', title: 'Client Themes', desc: 'Import, create and apply client CSS themes.', icon: <PanelsTopLeft size={24} /> },
                 { id: 'icons', title: 'Icon Swapper', desc: 'Equip hidden summoner icons instantly.', icon: <UserCircle size={24} /> },
                 { id: 'tokens', title: 'Profile Tokens', desc: 'Customize your profile badges.', icon: <Award size={24} /> },
                 { id: 'presets', title: 'Presets', desc: 'Save and load full profile presets.', icon: <Layers size={24} /> },
