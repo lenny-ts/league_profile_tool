@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { invoke } from "@tauri-apps/api/core";
 import { LcuInfo } from '../../hooks/useLcu';
 import { Icon } from '../../hooks/useIcons';
+import { SAVED_ICON_KEY } from '../../storageKeys';
 
 interface IconTabProps {
     lcu: LcuInfo | null;
@@ -14,8 +15,6 @@ interface IconTabProps {
     handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
     gridRef: React.RefObject<HTMLDivElement | null>;
 }
-
-import { SAVED_ICON_KEY } from '../../hooks/useAutoRestore';
 
 const IconTab: React.FC<IconTabProps> = ({
     lcu, showToast, addLog,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, DEFAULT_IDLE_BIO } from '../store';
 import type { LcuInfo, MusicBioSettings } from '../store';
+import { MUSIC_BIO_SETTINGS_KEY } from '../storageKeys';
 
 export type { MusicBioSettings };
 export { defaultMusicBioSettings, DEFAULT_IDLE_BIO } from '../store';
@@ -13,7 +14,6 @@ export interface NowPlayingTrack {
     album: string;
 }
 
-export const MUSIC_BIO_STORAGE_KEY = "music_bio_settings_v1";
 export const clampPollInterval = (value: number) => {
     if (!Number.isFinite(value)) return 15;
     return Math.max(5, Math.min(120, Math.round(value)));
@@ -88,7 +88,7 @@ export function useMusicSync(lcu: LcuInfo | null, addLog: (msg: string) => void)
         if (musicSettingsHydratedRef.current) return;
         musicSettingsHydratedRef.current = true;
         try {
-            const raw = localStorage.getItem(MUSIC_BIO_STORAGE_KEY);
+            const raw = localStorage.getItem(MUSIC_BIO_SETTINGS_KEY);
             if (raw) {
                 const parsed = JSON.parse(raw) as Partial<MusicBioSettings>;
                 setMusicBio({
@@ -105,7 +105,7 @@ export function useMusicSync(lcu: LcuInfo | null, addLog: (msg: string) => void)
     // Persist to localStorage whenever musicBio changes
     useEffect(() => {
         if (!musicSettingsHydratedRef.current) return;
-        localStorage.setItem(MUSIC_BIO_STORAGE_KEY, JSON.stringify({
+        localStorage.setItem(MUSIC_BIO_SETTINGS_KEY, JSON.stringify({
             ...musicBio,
             pollIntervalSec: clampPollInterval(musicBio.pollIntervalSec)
         }));
