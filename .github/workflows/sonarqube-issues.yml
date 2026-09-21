@@ -30,7 +30,7 @@ jobs:
         run: npm run coverage
 
       - name: Run SonarQube analysis
-        uses: SonarSource/sonarqube-scan-action@v8.2.1
+        uses: SonarSource/sonarqube-scan-action@v8.2.2
         with:
           args: >
             -Dsonar.qualitygate.wait=true
