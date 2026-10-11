@@ -1,19 +1,19 @@
 {
-    "version": "1.13.0",
-    "notes": "## [1.13.0] - 2026-09-02  ### Added - **Challenge Level editor**: Added a dedicated section for changing the challenge crystal level and challenge points independently from rank overrides. - **Profile Overview rank override**: Added an optional, persisted PenguLoader-powered override for the rank shown on the League Profile Overview card. - **PenguLoader setup guidance**: Added an installation status, prominent three-step setup instructions, plugin update action, and manual installation documentation.  ### Changed - **Rank Override interface**: Reworked queue, tier, and division controls into a clearer card-based layout consistent with the rest of the application. - **Independent feature navigation**: Rank Override and Challenge Level now have separate sidebar and Home entries. - **PenguLoader plugin**: The bundled plugin now updates the Overview queue label, tier text, and regalia emblem while respecting the Overview toggle. - **Responsive layout**: Rank and Challenge editors now use vertical cards with mobile-friendly control grids.  ### Tests - Added dedicated Challenge Level coverage and expanded Rank Override and Home navigation tests. The complete frontend suite passes with 165 tests.  ",
-    "pub_date": "2026-09-02T19:44:27Z",
+    "version": "2.0.0",
+    "notes": "## [2.0.0] - 2026-09-17  ### Added - **Atelier Client Themes**: Obsidian Atelier and Rosewater Atelier presets with a single representative splash, animated page backgrounds, themed navigation, friend list, and profile sidebar, applied directly from the preset card. - **Managed Pengu Loader runtime**: The app migrates an existing Pengu installation or downloads the official MIT-licensed v1.1.6 package automatically, then installs and updates LPT plugins under `%LOCALAPPDATA%`. - **Automatic Pengu start**: Pengu Loader launches on app start and after plugin setup through the Windows elevation prompt.  ### Fixed - **Custom background conflicts**: Applying a Riot skin or a preset with a Riot background now removes an active custom GIF, and keeps the GIF when the skin change fails. - **Profile area protection**: Themes no longer cover the top-right identity block or the Profile Overview background. - **Background picker**: The apply button stays below the skin grid and scrolls into view when a skin is selected.  ### Tests - 201 frontend and plugin tests, 1 Rust test, and a website media check pass.  ### Added - **Custom profile backgrounds**: Install static or animated PNG, JPG, WEBP, and GIF backgrounds through the bundled PenguLoader integration. - **Overview customization**: Override Mastery, Clash, Honor, banner, and profile Overview rank cards with a persistent live preview. - **Window size presets**: Switch between compact, recommended, and large layouts from Settings with monitor-aware sizing.  ### Changed - **Compact Control Center**: Rebuilt the application shell with grouped navigation, a global client status header, denser controls, and responsive layouts. - **Unified editors**: Standardized page headers, section headers, field layouts, panels, and action docks across Background, Overview, Rank, Challenge, and Settings. - **Accurate previews**: Background darkening and Overview champion icons, mastery levels, and automatic states now update directly in their previews. - **Responsive forms**: Rank, Challenge, Overview, and Settings controls now reflow cleanly in narrow windows. - **Feature priority**: Moved Background, Overview, Rank, and Challenge tools to the top of the customization workflow. - **Default window**: Increased the default workspace to 1200 x 800 with a 960 x 650 minimum size.  ### Tests - Updated profile interaction coverage for the button-based availability controls. The complete frontend suite passes with 191 tests.  ",
+    "pub_date": "2026-10-11T19:46:36Z",
     "platforms": {
         "windows-x86_64": {
             "signature": "Not Found",
-            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v1.13.0/League-Profile-Tool_1.13.0_x64-setup.exe"
+            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v2.0.0/League-Profile-Tool_2.0.0_x64-setup.exe"
         },
         "darwin-x86_64": {
             "signature": "Not Found",
-            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v1.13.0/League-Profile-Tool_aarch64.app.tar.gz"
+            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v2.0.0/League-Profile-Tool_aarch64.app.tar.gz"
         },
         "darwin-aarch64": {
             "signature": "Not Found",
-            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v1.13.0/League-Profile-Tool_aarch64.app.tar.gz"
+            "url": "https://github.com/lenny-ts/league_profile_tool/releases/download/v2.0.0/League-Profile-Tool_aarch64.app.tar.gz"
         }
     }
 }
