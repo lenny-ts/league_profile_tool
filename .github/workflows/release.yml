@@ -40,9 +40,9 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest"
-            args: "| *.sig"
+            args: ""
           - platform: "windows-latest"
-            args: "| *.sig"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -149,7 +149,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-          includeUpdaterJson: false
+          includeUpdaterJson: true
 
       - name: Remove Windows signing material
         if: always() && matrix.platform == 'windows-latest'
@@ -178,53 +178,29 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Download signatures from release
+      - name: Download the updater manifest produced by the release
         env:
           GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
-          TAG="${{ steps.version.outputs.tag }}"
-          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          TAG=${GITHUB_REF#refs/tags/}
+          # latest.json is written by tauri-action from the real bundle artifacts,
+          # so signatures and URLs cannot drift from what was actually uploaded.
+          curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" -o updater.json \
+            "https://github.com/${{ github.repository }}/releases/download/${TAG}/latest.json"
+          cat updater.json
 
-          # -f makes a missing signature a hard failure instead of silently
-          # writing a 404 page into updater.json.
-          curl -fL -o windows.sig "${BASE}/League-Profile-Tool_${VERSION}_x64-setup.exe.sig"
-          curl -fL -o macos.sig "${BASE}/League-Profile-Tool_${VERSION}_aarch64.app.tar.gz.sig"
-
-      - name: Update updater.json with signatures
+      - name: Attach changelog notes to the manifest
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TAG="${{ steps.version.outputs.tag }}"
-          
-          # Read signatures
-          WIN_SIG=$(cat windows.sig)
-          MAC_SIG=$(cat macos.sig)
-          
-          # Get current date in ISO format
-          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
-          # Get release notes from CHANGELOG
-          NOTES=$(awk '/^## \[/{if (count++) exit} {if (count) print}' res/docs/CHANGELOG.md | sed 's/"/\\"/g' | tr '\n' ' ')
-          
-          # Create updated updater.json
-          cat > updater.json << EOF
-          {
-              "version": "${VERSION}",
-              "notes": "${NOTES}",
-              "pub_date": "${PUB_DATE}",
-              "platforms": {
-                  "windows-x86_64": {
-                      "signature": "${WIN_SIG}",
-                      "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_${VERSION}_x64-setup.exe"
-                  },
-                  "darwin-aarch64": {
-                      "signature": "${MAC_SIG}",
-                      "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_${VERSION}_aarch64.app.tar.gz"
-                  }
-              }
-          }
-          EOF
+          set -euo pipefail
+          NOTES=$(awk '/^## \[/{if (count++) exit} {if (count) print}' res/docs/CHANGELOG.md)
+          jq --arg notes "$NOTES" '.notes = $notes' updater.json > updater.tmp.json
+          mv updater.tmp.json updater.json
+          jq -e '.version and (.platforms | length > 0)' updater.json > /dev/null \
+            || { echo '::error::updater manifest is missing version or platforms'; exit 1; }
+          jq -e '[.platforms[].signature] | all(. != null and . != "" and . != "Not Found")' updater.json > /dev/null \
+            || { echo '::error::updater manifest contains a missing signature'; exit 1; }
+          cat updater.json
 
       - name: Commit and push updated updater.json
         env:
