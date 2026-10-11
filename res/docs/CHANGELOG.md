@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-10-11
+
+### Added
+- **One-click Pengu setup**: Opening the app for the first time now downloads Pengu Loader, installs both bundled plugins, and starts it, with no manual step. Later launches only start Pengu; an existing installation is reused and never re-downloaded. On the very first run Windows shows its usual UAC confirmation.
+
+### Changed
+- **Dependency updates**: Tauri 2.12, React 19.3, Vite 8.3, rustls 0.23.43, `dirs` 6.0, and the npm and Cargo minor/patch groups. The 2.0.0 installers were built before these landed.
+
+### Fixed
+- Removed the unused SonarCloud integration, its workflow, and the related repository secret.
+
+### Tests
+- 202 frontend and plugin tests, 1 Rust test, and a website media check pass.
+
 ## [2.0.0] - 2026-09-17
 
 ### Added
