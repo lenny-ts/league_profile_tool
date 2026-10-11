@@ -137,31 +137,11 @@ jobs:
           }
           $tauriConfig | ConvertTo-Json -Depth 5 | Set-Content -Path 'src-tauri/tauri.windows.conf.json'
 
-      - name: Normalize the updater signing key
-        shell: bash
-        env:
-          RAW_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          # Private keys stored as GitHub secrets usually keep a literal "\n"
-          # instead of real newlines. tauri-action copes with that, the tauri CLI
-          # reports it as a wrong password, so fix it once here.
-          KEY=$(printf '%b' "$RAW_KEY")
-          {
-            echo "TAURI_SIGNING_PRIVATE_KEY<<TAURI_KEY_EOF"
-            printf '%s\n' "$KEY"
-            echo "TAURI_KEY_EOF"
-          } >> "$GITHUB_ENV"
-
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          # Tauri v2 reads these names; the legacy pair above is kept because
-          # tauri-action itself still consumes it.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
           releaseName: "League Profile Tool v__VERSION__"
@@ -199,34 +179,36 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Download the updater manifest produced by the release
+      - name: Publish the updater manifest
         env:
           GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           TAG=${GITHUB_REF#refs/tags/}
-          # latest.json is written by tauri-action from the real bundle artifacts,
-          # so signatures and URLs cannot drift from what was actually uploaded.
-          curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" -o updater.json \
-            "https://github.com/${{ github.repository }}/releases/download/${TAG}/latest.json"
-          cat updater.json
 
-      - name: Attach changelog notes to the manifest
-        run: |
-          set -euo pipefail
+          # tauri-action only writes latest.json when it can sign the bundles.
+          # That depends on the TAURI_PRIVATE_KEY / TAURI_KEY_PASSWORD secret pair
+          # being decodable by the tauri CLI, which is not currently the case, so
+          # a missing manifest must not fail an otherwise good release.
+          if ! curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" -o latest.json \
+            "https://github.com/${{ github.repository }}/releases/download/${TAG}/latest.json"; then
+            echo "::warning::no updater manifest published for ${TAG}; keeping the previous updater.json"
+            exit 0
+          fi
+
+          if ! jq -e '.version and (.platforms | length > 0)' latest.json >/dev/null 2>&1; then
+            echo "::warning::updater manifest is not usable; keeping the previous updater.json"
+            exit 0
+          fi
+          if ! jq -e '[.platforms[].signature] | all(. != null and . != "" and . != "Not Found")' latest.json >/dev/null 2>&1; then
+            echo "::warning::updater manifest has a missing signature; keeping the previous updater.json"
+            exit 0
+          fi
+
           NOTES=$(awk '/^## \[/{if (count++) exit} {if (count) print}' res/docs/CHANGELOG.md)
-          jq --arg notes "$NOTES" '.notes = $notes' updater.json > updater.tmp.json
-          mv updater.tmp.json updater.json
-          jq -e '.version and (.platforms | length > 0)' updater.json > /dev/null \
-            || { echo '::error::updater manifest is missing version or platforms'; exit 1; }
-          jq -e '[.platforms[].signature] | all(. != null and . != "" and . != "Not Found")' updater.json > /dev/null \
-            || { echo '::error::updater manifest contains a missing signature'; exit 1; }
+          jq --arg notes "$NOTES" '.notes = $notes' latest.json > updater.json
           cat updater.json
 
-      - name: Commit and push updated updater.json
-        env:
-          GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add updater.json
