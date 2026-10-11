@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { LcuInfo } from '../../hooks/useLcu';
-import { LcuRequestFn, patchChatLol } from '../../utils/chatMe';
+import { getCurrentRankedStats, LcuRequestFn, patchChatLol } from '../../utils/chatMe';
 import { 
     SAVED_RANK_QUEUE_KEY, 
     SAVED_RANK_TIER_KEY, 
     SAVED_RANK_DIV_KEY, 
+    SAVED_RANK_LP_KEY,
+    SAVED_LAST_SEASON_RANK_KEY,
+    SAVED_RANK_BORDER_KEY,
+    SAVED_RANK_BANNER_KEY,
+    SAVED_OVERVIEW_CARDS_KEY,
     PENGU_OVERVIEW_OVERRIDE_KEY,
     PENGU_PLUGIN_INSTALLED_KEY,
 } from '../../storageKeys';
-import { Shield, RefreshCw, Monitor, Puzzle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, RefreshCw, Monitor, Puzzle } from 'lucide-react';
 
 interface RankTabProps {
     lcu: LcuInfo | null;
@@ -19,12 +24,16 @@ interface RankTabProps {
 }
 
 const TIERS = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
+const LAST_SEASON_TIERS = ["UNRANKED", ...TIERS];
+const BORDER_TIERS = ["AUTO", ...TIERS];
+const BANNER_TIERS = ["AUTO", "DEFAULT", ...TIERS];
 const DIVISIONS = ["I", "II", "III", "IV"];
 const QUEUES = [
     { value: "RANKED_SOLO_5x5", label: "Solo/Duo" },
     { value: "RANKED_FLEX_SR", label: "Flex 5v5" },
-    { value: "RANKED_FLEX_TT", label: "Flex 3v3" },
-    { value: "RANKED_TFT", label: "TFT" }
+    { value: "RANKED_PREMADE_5x5", label: "5v5" },
+    { value: "RANKED_TFT", label: "TFT" },
+    { value: "RANKED_TFT_DOUBLE_UP", label: "Double Up" }
 ];
 const TIER_COLORS: Record<string, string> = {
     NONE: "#595959",
@@ -47,39 +56,72 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
     // Rank states
     const [soloTier, setSoloTier] = useState("CHALLENGER");
     const [soloDiv, setSoloDiv] = useState("I");
+    const [leaguePoints, setLeaguePoints] = useState(0);
+    const [lastSeasonTier, setLastSeasonTier] = useState("UNRANKED");
+    const [borderTier, setBorderTier] = useState("AUTO");
+    const [bannerTier, setBannerTier] = useState("AUTO");
     const [queueType, setQueueType] = useState("RANKED_SOLO_5x5");
     const [overviewEnabled, setOverviewEnabled] = useState(() => localStorage.getItem(PENGU_OVERVIEW_OVERRIDE_KEY) !== 'false');
     const pluginInstalled = localStorage.getItem(PENGU_PLUGIN_INSTALLED_KEY) === 'true';
 
-    const applyLolData = useCallback((raw: string | Record<string, unknown>) => {
+    const applyLolData = useCallback((raw: string | Record<string, unknown>): boolean => {
         const lol = typeof raw === 'string' ? JSON.parse(raw) as Record<string, unknown> : raw;
-        if (lol.rankedLeagueTier) setSoloTier(lol.rankedLeagueTier as string);
-        if (lol.rankedLeagueDivision) setSoloDiv(lol.rankedLeagueDivision as string);
-        if (lol.rankedLeagueQueue) setQueueType(lol.rankedLeagueQueue as string);
+        const tier = String(lol.rankedLeagueTier || '').toUpperCase();
+        const division = String(lol.rankedLeagueDivision || '').toUpperCase();
+        const queue = String(lol.rankedLeagueQueue || '');
+        if (!TIERS.includes(tier)) return false;
+        setSoloTier(tier);
+        if (DIVISIONS.includes(division)) setSoloDiv(division);
+        if (QUEUES.some(item => item.value === queue)) setQueueType(queue);
+        return true;
     }, []);
 
-    const fetchCurrentData = useCallback(async () => {
+    const fetchCurrentData = useCallback(async (targetQueue: string, notify = false) => {
         if (!lcu) return;
         setFetching(true);
         try {
             addLog("Syncing rank status from LCU...");
-            
-            const chatRes = await lcuRequest("GET", "/lol-chat/v1/me") as { lol?: string | Record<string, unknown> } | null;
-            if (chatRes?.lol) {
-                applyLolData(chatRes.lol);
+
+            let synced = false;
+            const rankedStats = await getCurrentRankedStats(lcuRequest);
+            const previousTier = String(rankedStats?.highestPreviousSeasonEndTier || '').toUpperCase();
+            if (LAST_SEASON_TIERS.includes(previousTier)) setLastSeasonTier(previousTier);
+            const queueMap = rankedStats?.queueMap;
+            if (queueMap && typeof queueMap === 'object') {
+                const entry = (queueMap as Record<string, unknown>)[targetQueue];
+                if (entry && typeof entry === 'object') {
+                    const rank = entry as Record<string, unknown>;
+                    const tier = String(rank.tier || '').toUpperCase();
+                    const division = String(rank.division || '').toUpperCase();
+                    const points = Number(rank.leaguePoints);
+                    if (TIERS.includes(tier)) {
+                        setSoloTier(tier);
+                        if (DIVISIONS.includes(division)) setSoloDiv(division);
+                        if (Number.isFinite(points)) setLeaguePoints(Math.max(0, Math.trunc(points)));
+                        synced = true;
+                    }
+                }
             }
 
+            if (!synced) {
+                const chatRes = await lcuRequest("GET", "/lol-chat/v1/me") as { lol?: string | Record<string, unknown> } | null;
+                if (chatRes?.lol) synced = applyLolData(chatRes.lol);
+            }
+
+            if (!synced) throw new Error(`No rank data found for ${QUEUES.find(item => item.value === targetQueue)?.label || targetQueue}`);
             addLog("Rank status synced successfully.");
+            if (notify) showToast("Rank synced from League Client", "success");
         } catch (err) {
             addLog(`Failed to fetch current status: ${err}`);
+            if (notify) showToast(`Rank sync failed: ${err instanceof Error ? err.message : String(err)}`, "error");
         } finally {
             setFetching(false);
         }
-    }, [lcu, lcuRequest, addLog, applyLolData]);
+    }, [lcu, lcuRequest, addLog, applyLolData, showToast]);
 
     useEffect(() => {
         if (lcu) {
-            fetchCurrentData();
+            fetchCurrentData("RANKED_SOLO_5x5");
         }
     }, [lcu, fetchCurrentData]);
 
@@ -100,14 +142,41 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
             localStorage.setItem(SAVED_RANK_QUEUE_KEY, queueType);
             localStorage.setItem(SAVED_RANK_TIER_KEY, soloTier);
             localStorage.setItem(SAVED_RANK_DIV_KEY, soloDiv);
+            localStorage.setItem(SAVED_RANK_LP_KEY, leaguePoints.toString());
+            localStorage.setItem(SAVED_LAST_SEASON_RANK_KEY, lastSeasonTier);
+            localStorage.setItem(SAVED_RANK_BORDER_KEY, borderTier);
+            localStorage.setItem(SAVED_RANK_BANNER_KEY, bannerTier);
             localStorage.setItem(PENGU_OVERVIEW_OVERRIDE_KEY, overviewEnabled.toString());
 
             // Write config for Pengu Loader plugin
             try {
+                let overviewCards: Record<string, unknown> = {};
+                try {
+                    overviewCards = JSON.parse(localStorage.getItem(SAVED_OVERVIEW_CARDS_KEY) || '{}') as Record<string, unknown>;
+                } catch {
+                    localStorage.removeItem(SAVED_OVERVIEW_CARDS_KEY);
+                }
                 await invoke("save_rank_config", {
                     tier: soloTier,
                     division: soloDiv,
                     queue: queueType,
+                    leaguePoints,
+                    lastSeasonTier,
+                    borderTier,
+                    bannerTier,
+                    honorLevel: String(overviewCards.honorLevel || 'AUTO'),
+                    masteryScore: String(overviewCards.masteryScore || ''),
+                    masteryLevel: String(overviewCards.masteryLevel || 'AUTO'),
+                    masteryLevel2: String(overviewCards.masteryLevel2 || 'AUTO'),
+                    masteryLevel3: String(overviewCards.masteryLevel3 || 'AUTO'),
+                    masteryChampionId: String(overviewCards.masteryChampionId || 'AUTO'),
+                    masteryChampionId2: String(overviewCards.masteryChampionId2 || 'AUTO'),
+                    masteryChampionId3: String(overviewCards.masteryChampionId3 || 'AUTO'),
+                    trophyTheme: String(overviewCards.trophyTheme || 'AUTO'),
+                    trophyBracket: Number(overviewCards.trophyBracket) || 4,
+                    trophyTier: Number(overviewCards.trophyTier) || 4,
+                    clashBannerTheme: String(overviewCards.clashBannerTheme || 'AUTO'),
+                    clashBannerLevel: Number(overviewCards.clashBannerLevel) || 1,
                     overviewEnabled,
                 });
             } catch (e) {
@@ -128,140 +197,236 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
     const hasDivision = !["MASTER", "GRANDMASTER", "CHALLENGER"].includes(soloTier);
 
     return (
-        <div className="tab-content fadeIn feature-page">
-            <header className="feature-toolbar">
-                <div className="feature-toolbar-title">
-                    <Shield size={19} />
-                    <div>
-                        <h2>Rank Override</h2>
-                        <p>Presence rank, queue and Profile Overview output.</p>
-                    </div>
+        <div className="tab-content fadeIn ui-page">
+            <div className="ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Rank Override</h2>
+                    <p className="ui-page-header__description">Customize your visible rank, queue, and profile overview.</p>
                 </div>
-                <button type="button"
-                    className={`tool-action ${fetching ? 'loading' : ''}`}
-                    onClick={fetchCurrentData}
-                    disabled={!lcu || fetching}
-                    title="Sync from Client"
-                >
-                    <RefreshCw size={14} /> Sync client
-                </button>
-            </header>
+            </div>
 
-            <div className="feature-workbench rank-workbench">
-                <section className="editor-surface">
-                    <fieldset className="editor-block rank-queue-block">
-                        <legend>Queue</legend>
-                    <div className="rank-queue-toggles">
+            <div className="ui-page-stack">
+                {/* Queue Card */}
+                <div className="card ui-panel">
+                    <div className="ui-section-header">
+                        <div className="ui-section-header__icon">
+                            <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
+                        </div>
+                        <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Queue</h3><p className="ui-section-header__description">Select which ranked queue to display.</p></div>
+                    </div>
+                    <div className="rank-queue-grid">
                         {QUEUES.map(q => (
                             <button type="button"
                                 key={q.value}
-                                className={`rank-queue-btn ${queueType === q.value ? 'active' : ''}`}
                                 onClick={() => setQueueType(q.value)}
                                 disabled={!lcu}
+                                style={{
+                                    padding: '12px 10px', border: 'none', borderRight: '1px solid var(--glass-border)',
+                                    background: queueType === q.value ? 'rgba(59, 130, 246, 0.12)' : 'rgba(0, 0, 0, 0.2)',
+                                    color: queueType === q.value ? 'var(--hextech-gold)' : 'var(--text-secondary)',
+                                    fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                                    boxShadow: queueType === q.value ? 'inset 0 -2px #3b82f6' : 'none',
+                                    transition: 'all 0.15s'
+                                }}
                             >
                                 {q.label}
                             </button>
                         ))}
                     </div>
-                    </fieldset>
+                </div>
 
-                    <fieldset className={`editor-block rank-tier-block ${hasDivision ? '' : 'editor-block-last rank-tier-full'}`}>
-                        <legend>Tier</legend>
-                    <div className="tier-grid">
-                        {TIERS.map(t => {
-                            const isActive = soloTier === t;
-                            const color = TIER_COLORS[t] || "#ffffff";
-                            return (
-                                <button type="button"
-                                    key={t}
-                                    className={`tier-btn ${isActive ? 'active' : ''}`}
-                                    style={isActive ? { color, borderColor: color } : {}}
-                                    onClick={() => setSoloTier(t)}
-                                    disabled={!lcu}
-                                >
-                                    <Shield size={18} color={isActive ? color : "var(--text-secondary)"} />
-                                    {t}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    </fieldset>
-
-                    {hasDivision && (
-                        <fieldset className="editor-block editor-block-last rank-division-block">
-                            <legend>Division</legend>
-                        <div className="division-grid">
-                            {DIVISIONS.map(d => (
-                                <button type="button"
-                                    key={d}
-                                    className={`division-btn ${soloDiv === d ? 'active' : ''}`}
-                                    onClick={() => setSoloDiv(d)}
-                                    disabled={!lcu}
-                                >
-                                    {d}
-                                </button>
-                            ))}
-                        </div>
-                        </fieldset>
-                    )}
-                </section>
-
-                <aside className="inspector-surface">
-                    <div className="inspector-heading">Pending output</div>
-                    <div className="rank-readout" style={{ color: TIER_COLORS[soloTier] || '#ffffff' }}>
-                        <Shield size={28} />
-                        <div>
-                            <strong>{soloTier}{hasDivision ? ` ${soloDiv}` : ''}</strong>
-                            <span>{QUEUES.find(q => q.value === queueType)?.label || queueType}</span>
-                        </div>
-                    </div>
-                    <dl className="output-list">
-                        <div><dt>Presence</dt><dd>Chat and social cards</dd></div>
-                        <div><dt>Queue source</dt><dd>{QUEUES.find(q => q.value === queueType)?.label}</dd></div>
-                    </dl>
-
-                    <section className={`overview-inline ${overviewEnabled ? 'enabled' : ''}`} aria-labelledby="overview-override-title">
-                        <div className="overview-inline-row">
-                            <Monitor size={24} />
-                            <div className="overview-inline-copy">
-                                <div>
-                                    <h3 id="overview-override-title">PenguLoader Overview Override</h3>
-                                <span className={`overview-status ${pluginInstalled ? 'ready' : 'setup'}`}>
-                                    {pluginInstalled ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                                    {pluginInstalled ? 'Pengu ready' : 'Setup required'}
-                                </span>
-                                </div>
-                                <p>Required to apply the selected rank to your Profile Overview card and tooltip.</p>
+                {/* Tier + Division Card */}
+                <div>
+                    <div className="card ui-panel">
+                        <div className="ui-section-header">
+                            <div className="ui-section-header__icon">
+                                <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
                             </div>
-                            <label className="switch overview-switch">
-                                <span className="sr-only">Toggle Profile Overview rank override</span>
-                                <input type="checkbox" checked={overviewEnabled} onChange={(event) => setOverviewEnabled(event.target.checked)} />
-                                <span className="slider"></span>
-                            </label>
+                            <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Tier</h3><p className="ui-section-header__description">Choose the rank and division shown in the client.</p></div>
                         </div>
-
-                        {overviewEnabled && (
-                            <div className="overview-help">
-                                <div className="overview-help-title"><Puzzle size={17} /> How to enable the Overview override</div>
-                                <ol className="overview-setup-steps">
-                                    <li><span>1</span><p>Open <strong>Settings &gt; Pengu Loader</strong> and install PenguLoader if it is not already installed.</p></li>
-                                    <li><span>2</span><p>Click <strong>Install / Update Plugin</strong> in that section.</p></li>
-                                    <li><span>3</span><p>Return here, apply the override, then fully restart League.</p></li>
-                                </ol>
-                                <small>PenguLoader is only required for Profile Overview. Chat and social hover cards work independently.</small>
+                        <div className="rank-tier-grid">
+                            {TIERS.map(t => {
+                                const isActive = soloTier === t;
+                                const color = TIER_COLORS[t] || "#ffffff";
+                                return (
+                                    <button type="button"
+                                        key={t}
+                                        onClick={() => setSoloTier(t)}
+                                        disabled={!lcu}
+                                        aria-pressed={isActive}
+                                        title={`${t} rank tier`}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px',
+                                            padding: '8px 10px', borderRadius: '6px',
+                                            border: isActive ? `1px solid ${color}` : '1px solid var(--glass-border)',
+                                            background: isActive ? `${color}12` : 'rgba(0, 0, 0, 0.28)',
+                                            color: isActive ? color : 'var(--text-secondary)',
+                                            fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                            boxShadow: isActive ? `inset 2px 0 ${color}` : 'none',
+                                            transition: 'all 0.15s'
+                                        }}
+                                    >
+                                        <Shield size={16} />
+                                        {t}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {hasDivision && (
+                            <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid var(--glass-border)' }}>
+                                <div className="ui-section-header">
+                                    <div className="ui-section-header__icon">
+                                        <Shield size={16} style={{ color: 'var(--hextech-gold)' }} />
+                                    </div>
+                                    <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Division</h3></div>
+                                </div>
+                                <div className="rank-division-grid">
+                                    {DIVISIONS.map(d => (
+                                        <button type="button"
+                                            key={d}
+                                            onClick={() => setSoloDiv(d)}
+                                            disabled={!lcu}
+                                            aria-pressed={soloDiv === d}
+                                            title={`Division ${d}`}
+                                            style={{
+                                                padding: '8px', borderRadius: '6px',
+                                                border: soloDiv === d ? '1px solid var(--hextech-gold)' : '1px solid var(--glass-border)',
+                                                background: soloDiv === d ? 'rgba(59, 130, 246, 0.12)' : 'rgba(0, 0, 0, 0.28)',
+                                                color: soloDiv === d ? 'var(--hextech-gold)' : 'var(--text-secondary)',
+                                                fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                                                transition: 'all 0.15s'
+                                            }}
+                                        >
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
-                    </section>
-
-                    <div className="inspector-actions">
-                        <button type="button" className="primary-btn" onClick={applyChanges} disabled={!lcu || loading || fetching}>
-                            {loading ? 'APPLYING...' : 'APPLY RANK OVERRIDES'}
-                        </button>
-                    {!lcu && (
-                            <p className="feature-client-warning">League client connection required.</p>
-                    )}
+                        <div className="rank-presentation-panel">
+                            <div className="rank-presentation-heading">
+                                <div><strong>Profile presentation</strong><small>League Points, previous rank and profile artwork.</small></div>
+                            </div>
+                            <div className="rank-presentation-grid">
+                                <label htmlFor="rank-league-points" className="rank-presentation-field">
+                                    <span>League Points</span><small>Current LP value</small>
+                                    <input id="rank-league-points" aria-label="League Points" type="number" min="0" max="9999" step="1" value={leaguePoints} disabled={!lcu} onChange={(event) => setLeaguePoints(Math.min(9999, Math.max(0, Number.parseInt(event.target.value, 10) || 0)))} />
+                                </label>
+                                <label htmlFor="last-season-rank" className="rank-presentation-field">
+                                    <span>Last Season Rank</span><small>Shown inside the tooltip</small>
+                                    <select id="last-season-rank" aria-label="Last Season Rank" value={lastSeasonTier} disabled={!lcu} onChange={(event) => setLastSeasonTier(event.target.value)}>
+                                        {LAST_SEASON_TIERS.map(tier => <option key={tier} value={tier}>{tier}</option>)}
+                                    </select>
+                                </label>
+                                <label htmlFor="rank-banner" className="rank-presentation-field">
+                                    <span>Rank Banner</span><small>Profile banner artwork</small>
+                                    <select id="rank-banner" aria-label="Rank Banner" value={bannerTier} disabled={!lcu} onChange={(event) => setBannerTier(event.target.value)}>
+                                        {BANNER_TIERS.map(tier => <option key={tier} value={tier}>{tier === 'AUTO' ? 'AUTOMATIC / LAST SEASON' : tier}</option>)}
+                                    </select>
+                                </label>
+                                <label htmlFor="rank-border" className="rank-presentation-field">
+                                    <span>Rank Border</span><small>Profile crest frame</small>
+                                    <select id="rank-border" aria-label="Rank Border" value={borderTier} disabled={!lcu} onChange={(event) => setBorderTier(event.target.value)}>
+                                        {BORDER_TIERS.map(tier => <option key={tier} value={tier}>{tier === 'AUTO' ? 'AUTOMATIC / CURRENT RANK' : tier}</option>)}
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                </aside>
+                </div>
+
+                {/* Bottom — PenguLoader Toggle + Actions */}
+                <div className="card ui-action-dock rank-action-dock">
+                        <div className="ui-action-dock__hint rank-overview-control">
+                            <Monitor size={16} style={{ color: 'var(--hextech-gold)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Profile Overview</span>
+                            <span style={{ 
+                                fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px',
+                                background: pluginInstalled ? 'rgba(34, 197, 94, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+                                color: pluginInstalled ? '#22c55e' : '#fbbf24',
+                                fontWeight: 600, flexShrink: 0
+                            }}>
+                                {pluginInstalled ? 'Pengu ready' : 'Setup'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setOverviewEnabled(!overviewEnabled)}
+                                aria-label="Toggle Profile Overview rank override"
+                                aria-pressed={overviewEnabled}
+                                style={{
+                                    width: '40px', height: '22px', borderRadius: '11px', border: 'none', cursor: 'pointer',
+                                    background: overviewEnabled ? 'var(--hextech-gold)' : 'rgba(255, 255, 255, 0.1)',
+                                    position: 'relative', transition: 'all 0.2s', flexShrink: 0
+                                }}
+                            >
+                                <span style={{
+                                    position: 'absolute', top: '3px',
+                                    left: overviewEnabled ? '21px' : '3px',
+                                    width: '16px', height: '16px', borderRadius: '50%',
+                                    background: overviewEnabled ? '#09090b' : 'rgba(255, 255, 255, 0.5)',
+                                    transition: 'all 0.2s'
+                                }}></span>
+                            </button>
+                        </div>
+
+                        <div className="ui-action-dock__actions">
+                            <button type="button" className="primary-btn" onClick={applyChanges} disabled={!lcu || loading || fetching}
+                                style={{ padding: '9px 20px', fontSize: '0.85rem', borderRadius: '8px', whiteSpace: 'nowrap' }}>
+                                {loading ? '...' : 'APPLY'}
+                            </button>
+                            <button type="button" onClick={() => fetchCurrentData(queueType, true)} disabled={!lcu || fetching}
+                                title="Read the current rank for the selected queue from the League Client"
+                                style={{
+                                    padding: '9px 20px', fontSize: '0.85rem', fontWeight: 800, borderRadius: '8px',
+                                    border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)',
+                                    color: 'var(--text-secondary)', cursor: 'pointer',
+                                    textTransform: 'uppercase', letterSpacing: '1px',
+                                    display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap'
+                                }}>
+                                <RefreshCw size={13} className={fetching ? 'intel-spinner' : ''} /> Sync
+                            </button>
+                        </div>
+                </div>
+
+                {/* PenguLoader Setup Guide */}
+                <div className="card ui-panel">
+                    <div className="ui-section-header">
+                        <div className="ui-section-header__icon">
+                            <Puzzle size={16} style={{ color: 'var(--hextech-gold)' }} />
+                        </div>
+                        <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Profile Overview Setup Guide</h3><p className="ui-section-header__description">Three steps to enable the client-side rank card.</p></div>
+                    </div>
+                    <p style={{ margin: '0 0 14px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        The Profile Overview shows your rank in the League client's profile card and tooltip.
+                        This feature requires <a href="https://github.com/PenguLoader/PenguLoader" target="_blank" rel="noreferrer" style={{ color: 'var(--hextech-gold)' }}>PenguLoader</a> and a small plugin installed by this app.
+                    </p>
+                    <div className="rank-setup-grid">
+                        <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--hextech-gold)', marginBottom: '6px' }}>1. Install PenguLoader</div>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                Open <strong>Settings &gt; Pengu Loader</strong> and click <strong>Install Pengu &amp; Plugins</strong>. The app downloads the official runtime automatically.
+                            </p>
+                        </div>
+                        <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--hextech-gold)', marginBottom: '6px' }}>2. Install Plugin</div>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                In <strong>Settings &gt; Pengu Loader</strong>, click <strong>Install / Update Plugin</strong>. This app installs the rank override plugin for you.
+                            </p>
+                        </div>
+                        <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--hextech-gold)', marginBottom: '6px' }}>3. Enable & Restart</div>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                Toggle <strong>Profile Overview</strong> ON above, then restart the League Client. Your rank will appear on your profile.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {!lcu && (
+                    <div style={{ padding: '14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', textAlign: 'center', flexShrink: 0 }}>
+                        <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>Start League of Legends to enable this feature.</span>
+                    </div>
+                )}
             </div>
         </div>
     );

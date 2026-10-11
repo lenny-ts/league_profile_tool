@@ -31,3 +31,4 @@ src-tauri/gen/
 **/*.key
 **/*.pfx
 **/*.p12
+cert-base64.txt

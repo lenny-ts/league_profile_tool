@@ -47,6 +47,7 @@ describe('RankTab', () => {
         expect(rankSection).toBeDefined();
         expect(screen.queryByText('Challenge Crystal Override')).toBeNull();
         expect(screen.queryByLabelText('Challenge Points')).toBeNull();
+        expect(screen.queryByLabelText('Honor Level')).toBeNull();
         expect(props.lcuRequest).toHaveBeenCalledWith("GET", "/lol-chat/v1/me");
     });
 
@@ -61,14 +62,93 @@ describe('RankTab', () => {
         expect(goldElements.length).toBeGreaterThan(0);
     });
 
+    it('should apply a custom League Points value to the overview config', async () => {
+        const props = createMockProps();
+        render(<RankTab {...props} />);
+
+        await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
+        fireEvent.change(screen.getByLabelText('League Points'), { target: { value: '742' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('profile_saved_rank_lp_v1')).toBe('742');
+            expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', expect.objectContaining({
+                leaguePoints: 742,
+            }));
+        });
+    });
+
+    it('should apply a custom Last Season Rank to the overview config', async () => {
+        const props = createMockProps();
+        render(<RankTab {...props} />);
+
+        await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
+        fireEvent.change(screen.getByLabelText('Last Season Rank'), { target: { value: 'DIAMOND' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('profile_saved_last_season_rank_v1')).toBe('DIAMOND');
+            expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', expect.objectContaining({
+                lastSeasonTier: 'DIAMOND',
+            }));
+        });
+    });
+
+    it('should apply an independently selected rank border', async () => {
+        const props = createMockProps();
+        render(<RankTab {...props} />);
+
+        await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
+        fireEvent.change(screen.getByLabelText('Rank Border'), { target: { value: 'MASTER' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('profile_saved_rank_border_v1')).toBe('MASTER');
+            expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', expect.objectContaining({
+                borderTier: 'MASTER',
+            }));
+        });
+    });
+
+    it('should apply an independently selected rank banner', async () => {
+        const props = createMockProps();
+        render(<RankTab {...props} />);
+
+        await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
+        fireEvent.change(screen.getByLabelText('Rank Banner'), { target: { value: 'CHALLENGER' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('profile_saved_rank_banner_v1')).toBe('CHALLENGER');
+            expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', expect.objectContaining({
+                bannerTier: 'CHALLENGER',
+            }));
+        });
+    });
+
+    it('should offer the current ranked queue types', async () => {
+        const props = createMockProps();
+        render(<RankTab {...props} />);
+
+        expect(screen.getByRole('button', { name: 'Solo/Duo' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'Flex 5v5' })).toBeDefined();
+        expect(screen.getByRole('button', { name: '5v5' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'TFT' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'Double Up' })).toBeDefined();
+        expect(screen.queryByRole('button', { name: 'Flex 3v3' })).toBeNull();
+        expect(screen.getByTitle('GRANDMASTER rank tier').parentElement).toHaveClass('rank-tier-grid');
+        expect(screen.getByText('1. Install PenguLoader').parentElement?.parentElement).toHaveClass('rank-setup-grid');
+        await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
+    });
+
     it('should explain the Pengu requirement for the Overview override', async () => {
         const props = createMockProps();
         render(<RankTab {...props} />);
 
-        expect(screen.getByText('PenguLoader Overview Override')).toBeDefined();
-        expect(screen.getByText('Setup required')).toBeDefined();
-        expect(screen.getByText('How to enable the Overview override')).toBeDefined();
-        expect(screen.getByText(/Settings > Pengu Loader/)).toBeDefined();
+        expect(screen.getAllByText('Profile Overview').length).toBeGreaterThan(0);
+        expect(screen.getByText('Setup')).toBeDefined();
+        expect(screen.getByText(/Profile Overview.*Setup Guide/)).toBeDefined();
+        expect(screen.getAllByText(/Settings > Pengu Loader/).length).toBeGreaterThan(0);
         await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Rank status synced successfully.'));
     });
 
@@ -76,12 +156,10 @@ describe('RankTab', () => {
         const props = createMockProps();
         render(<RankTab {...props} />);
 
-        const overviewToggle = screen.getByText('Toggle Profile Overview rank override').closest('label')?.querySelector('input');
-        if (!overviewToggle) throw new Error('Overview toggle not found');
+        const overviewToggle = screen.getByRole('button', { name: 'Toggle Profile Overview rank override' });
         fireEvent.click(overviewToggle);
-        expect(screen.queryByText('How to enable the Overview override')).toBeNull();
 
-        const applyButton = screen.getByText('APPLY RANK OVERRIDES') as HTMLButtonElement;
+        const applyButton = screen.getByText('APPLY') as HTMLButtonElement;
         await waitFor(() => expect(applyButton.disabled).toBe(false));
         fireEvent.click(applyButton);
 
@@ -98,7 +176,7 @@ describe('RankTab', () => {
         const props = createMockProps();
         render(<RankTab {...props} />);
 
-        const applyBtn = await screen.findByText('APPLY RANK OVERRIDES');
+        const applyBtn = await screen.findByText('APPLY');
         fireEvent.click(applyBtn);
 
         await waitFor(() => {
@@ -124,7 +202,7 @@ describe('RankTab', () => {
 
         render(<RankTab {...props} />);
 
-        const applyBtn = await screen.findByText('APPLY RANK OVERRIDES');
+        const applyBtn = await screen.findByText('APPLY');
         fireEvent.click(applyBtn);
 
         await waitFor(() => {
@@ -138,7 +216,34 @@ describe('RankTab', () => {
         props.lcu = null;
 
         render(<RankTab {...props} />);
-        const applyBtn = screen.getByText('APPLY RANK OVERRIDES');
+        const applyBtn = screen.getByText('APPLY');
         expect((applyBtn as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('should sync the selected queue from current ranked stats', async () => {
+        const props = createMockProps();
+        props.lcuRequest.mockImplementation((method, endpoint) => {
+            if (method === 'GET' && endpoint === '/lol-ranked/v1/current-ranked-stats') {
+                return Promise.resolve({
+                    highestPreviousSeasonEndTier: 'PLATINUM',
+                    queueMap: {
+                        RANKED_SOLO_5x5: { tier: 'GOLD', division: 'II', leaguePoints: 64 },
+                    },
+                });
+            }
+            return Promise.resolve({});
+        });
+
+        render(<RankTab {...props} />);
+
+        await waitFor(() => {
+            expect(screen.getByTitle('GOLD rank tier')).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.getByLabelText('League Points')).toHaveValue(64);
+            expect(screen.getByLabelText('Last Season Rank')).toHaveValue('PLATINUM');
+            expect(props.lcuRequest).toHaveBeenCalledWith('GET', '/lol-ranked/v1/current-ranked-stats');
+        });
+
+        fireEvent.click(screen.getByTitle('Read the current rank for the selected queue from the League Client'));
+        await waitFor(() => expect(props.showToast).toHaveBeenCalledWith('Rank synced from League Client', 'success'));
     });
 });

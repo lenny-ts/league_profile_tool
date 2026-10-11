@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { Info, ArrowLeftRight } from 'lucide-react';
 import { LcuInfo } from '../../hooks/useLcu';
-import { SAVED_BIO_KEY, SAVED_AVAILABILITY_KEY } from '../../hooks/useAutoRestore';
-import { SAVED_ENFORCE_OFFLINE_KEY, SAVED_USE_IDLE_AS_BIO_KEY } from '../../storageKeys';
+import { SAVED_AVAILABILITY_KEY, SAVED_BIO_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_USE_IDLE_AS_BIO_KEY } from '../../storageKeys';
 import { AutoExpandingTextarea } from '../../hooks/useAutoGrowingTextarea';
 import { useAppStore } from '../../store';
 import { truncateBio } from '../../hooks/useMusicSync';
@@ -111,123 +110,192 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ lcu, showToast, addLog, lcuRequ
     const isBusy = musicSyncActive && !useIdleAsBio;
 
     return (
-        <div className="tab-content fadeIn">
-            <div className="card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <h3 className="card-title" style={{ margin: 0 }}>Profile Bio &amp; Status</h3>
-                </div>
-
-                <div style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '8px' }}>
-                    <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                            type="checkbox"
-                            checked={useIdleAsBio}
-                            onChange={(e) => toggleUseIdleAsBio(e.target.checked)}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--hextech-gold)' }}
-                        />
-                        <span style={{ color: useIdleAsBio ? 'var(--hextech-gold)' : 'var(--text-primary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <ArrowLeftRight size={14} />
-                            Use Music Sync idle text as bio
-                        </span>
-                    </label>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '4px', marginLeft: '28px' }}>
-                        {useIdleAsBio
-                            ? "Editing the Music Sync idle text. More room for ASCII art. Disable to use the normal status message."
-                            : "Toggle to use the Music Sync idle text (more room) instead of the normal status message."}
-                    </div>
-                </div>
-
-                {isBusy && (
-                    <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(255, 179, 71, 0.1)', border: '1px solid rgba(255, 179, 71, 0.3)', borderRadius: '8px', fontSize: '0.75rem', color: '#ffb347', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Info size={14} style={{ flexShrink: 0 }} />
-                        Music Sync is active — it controls your bio right now. Changes here will be overwritten. Disable Music Sync to use this bio.
-                    </div>
-                )}
-
-                <div className="input-group">
-                    {useIdleAsBio ? (
-                        <>
-                            <label htmlFor="idle-bio-input">Bio (from Music Sync idle text)</label>
-                            <AutoExpandingTextarea
-                                id="idle-bio-input"
-                                value={musicBio.idleText}
-                                onChange={(e) => {
-                                    bioDirtyRef.current = true;
-                                    setMusicBio(prev => ({ ...prev, idleText: e.target.value }));
-                                }}
-                                placeholder="Enter your bio text or ASCII art here..."
-                                disabled={!lcu || loading}
-                                minRows={8}
-                                maxRows={200}
-                                style={{ background: 'rgba(0, 0, 0, 0.3)', fontFamily: 'monospace', fontSize: '0.80rem' }}
-                            />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                                <Info size={10} /> {musicBio.idleText.length} chars
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <label htmlFor="bio-input">New Status Message</label>
-                            <AutoExpandingTextarea
-                                id="bio-input"
-                                value={bio}
-                                onChange={(e) => { bioDirtyRef.current = true; setBio(e.target.value); }}
-                                placeholder="Tell your friends what you're up to..."
-                                disabled={!lcu || loading}
-                                minRows={8}
-                                maxRows={200}
-                                style={{ background: 'rgba(0, 0, 0, 0.3)', fontFamily: 'monospace', fontSize: '0.80rem' }}
-                            />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                                <Info size={10} /> {bio.length} chars
-                            </div>
-                        </>
-                    )}
-                </div>
-                <button type="button" className="primary-btn" onClick={handleUpdateBio} disabled={!lcu || loading || (useIdleAsBio ? !musicBio.idleText.trim() : !bio.trim())} style={{ width: '100%', marginTop: '12px' }}>APPLY BIO</button>
-
-                {lcu && (
-                    <div style={{ marginTop: '16px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <label htmlFor="availability-select" style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Chat Availability</label>
-                            <span className={`availability-pill ${availability}`}>
-                                <span className="availability-dot"></span>
-                                {statusLabel(availability)}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <select id="availability-select" className="availability-select" value={availability} onChange={(e) => setAvailability(e.target.value)} disabled={!lcu || loading} style={{ flex: 2 }}>
-                                {[
-                                    { value: "chat",    label: "ONLINE" },
-                                    { value: "away",    label: "AWAY" },
-                                    { value: "mobile",  label: "MOBILE" },
-                                    { value: "offline", label: "OFFLINE" }
-                                ].map(state => (
-                                    <option key={state.value} value={state.value}>{state.label}</option>
-                                ))}
-                            </select>
-                            <button type="button" className="primary-btn availability-apply" onClick={() => applyAvailability()} disabled={!lcu || loading} style={{ flex: 1 }}>
-                                APPLY
-                            </button>
-                        </div>
-                        <div style={{ marginTop: '12px' }}>
-                            <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={enforceOffline} 
-                                    onChange={(e) => toggleEnforceOffline(e.target.checked)} 
-                                    style={{ width: '18px', height: '18px', accentColor: 'var(--hextech-gold)' }}
-                                />
-                                <span style={{ color: enforceOffline ? 'var(--hextech-gold)' : 'var(--text-primary)', transition: 'color 0.2s' }}>
-                                    Enforce "Offline" status (even in Champ Select)
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                )}
+        <div className="tab-content fadeIn" style={{ padding: '0 20px 40px 20px' }}>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Profile Bio & Status</h2>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Update your status message and chat availability.</p>
             </div>
 
-            {!lcu && <p style={{ color: '#ff3232', fontSize: '0.8rem', marginTop: '15px', textAlign: 'center' }}>⚠ Start League of Legends to enable this feature.</p>}
+            {/* Music Sync Warning */}
+            {isBusy && (
+                <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.2)', borderRadius: '10px', fontSize: '0.8rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Info size={16} style={{ flexShrink: 0 }} />
+                    <span>Music Sync is active — it controls your bio. Disable it to use this editor.</span>
+                </div>
+            )}
+
+            {/* Bio Editor Card */}
+            <div className="card" style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <h3 className="card-title" style={{ margin: 0, fontSize: '0.85rem' }}>Status Message</h3>
+                </div>
+
+                {/* Music Sync Toggle */}
+                <div style={{ 
+                    marginBottom: '16px', padding: '14px 16px', 
+                    background: useIdleAsBio ? 'rgba(59, 130, 246, 0.06)' : 'rgba(0, 0, 0, 0.15)',
+                    border: `1px solid ${useIdleAsBio ? 'rgba(59, 130, 246, 0.25)' : 'var(--glass-border)'}`,
+                    borderRadius: '12px', transition: 'all 0.25s ease',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        <div style={{ 
+                            width: '32px', height: '32px', borderRadius: '8px',
+                            background: useIdleAsBio ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: useIdleAsBio ? 'var(--hextech-gold)' : 'var(--text-secondary)',
+                            transition: 'all 0.25s ease', flexShrink: 0
+                        }}>
+                            <ArrowLeftRight size={15} />
+                        </div>
+                        <div>
+                            <span style={{ 
+                                fontSize: '0.82rem', fontWeight: 600,
+                                color: useIdleAsBio ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                transition: 'color 0.2s', display: 'block', lineHeight: 1.3
+                            }}>
+                                Use Music Sync idle text as bio
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
+                                {useIdleAsBio ? "Active — editing idle text" : "Toggle to use idle text instead"}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {/* Custom Toggle Switch */}
+                    <button
+                        type="button"
+                        aria-label="Use Music Sync idle text as bio"
+                        aria-pressed={useIdleAsBio}
+                        onClick={() => toggleUseIdleAsBio(!useIdleAsBio)}
+                        disabled={!lcu || loading}
+                        style={{
+                            width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                            background: useIdleAsBio ? 'var(--hextech-gold)' : 'rgba(255, 255, 255, 0.1)',
+                            position: 'relative', transition: 'all 0.25s ease', flexShrink: 0,
+                            boxShadow: useIdleAsBio ? '0 0 12px rgba(59, 130, 246, 0.3)' : 'none'
+                        }}
+                    >
+                        <span style={{
+                            position: 'absolute', top: '3px',
+                            left: useIdleAsBio ? '23px' : '3px',
+                            width: '18px', height: '18px', borderRadius: '50%',
+                            background: useIdleAsBio ? '#09090b' : 'rgba(255, 255, 255, 0.6)',
+                            transition: 'all 0.25s ease',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                        }}></span>
+                    </button>
+                </div>
+
+                {/* Bio Input */}
+                <div className="input-group" style={{ marginBottom: '16px' }}>
+                    {useIdleAsBio ? (
+                        <AutoExpandingTextarea
+                            id="idle-bio-input"
+                            aria-label="Status message"
+                            value={musicBio.idleText}
+                            onChange={(e) => {
+                                bioDirtyRef.current = true;
+                                setMusicBio(prev => ({ ...prev, idleText: e.target.value }));
+                            }}
+                            placeholder="Enter your bio text or ASCII art here..."
+                            disabled={!lcu || loading}
+                            minRows={8}
+                            maxRows={200}
+                            style={{ background: 'rgba(0, 0, 0, 0.3)', fontFamily: 'var(--font-mono)', fontSize: '0.80rem', borderRadius: '10px' }}
+                        />
+                    ) : (
+                        <AutoExpandingTextarea
+                            id="bio-input"
+                            aria-label="Status message"
+                            value={bio}
+                            onChange={(e) => { bioDirtyRef.current = true; setBio(e.target.value); }}
+                            placeholder="Tell your friends what you're up to..."
+                            disabled={!lcu || loading}
+                            minRows={8}
+                            maxRows={200}
+                            style={{ background: 'rgba(0, 0, 0, 0.3)', fontFamily: 'var(--font-mono)', fontSize: '0.80rem', borderRadius: '10px' }}
+                        />
+                    )}
+                </div>
+
+                {/* Apply Button */}
+                <button type="button" className="primary-btn" onClick={handleUpdateBio} disabled={!lcu || loading || (useIdleAsBio ? !musicBio.idleText.trim() : !bio.trim())} style={{ width: '100%', padding: '12px', borderRadius: '10px', fontSize: '0.8rem' }}>
+                    {loading ? 'APPLYING...' : 'APPLY BIO'}
+                </button>
+            </div>
+
+            {/* Availability Card */}
+            {lcu && (
+                <div className="card">
+                    <h3 className="card-title" style={{ margin: '0 0 16px 0', fontSize: '0.85rem' }}>Chat Availability</h3>
+                    
+                    {/* Status Pills */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                        {[
+                            { value: "chat",    label: "ONLINE",  color: "#22c55e" },
+                            { value: "away",    label: "AWAY",    color: "#eab308" },
+                            { value: "mobile",  label: "MOBILE",  color: "#3b82f6" },
+                            { value: "offline", label: "OFFLINE", color: "#6b7280" }
+                        ].map(state => (
+                            <button
+                                key={state.value}
+                                type="button"
+                                onClick={() => applyAvailability(state.value)}
+                                disabled={!lcu || loading}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 12px',
+                                    background: availability === state.value ? `${state.color}15` : 'rgba(0, 0, 0, 0.2)',
+                                    border: `1px solid ${availability === state.value ? `${state.color}40` : 'var(--glass-border)'}`,
+                                    borderRadius: '8px',
+                                    color: availability === state.value ? state.color : 'var(--text-secondary)',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    letterSpacing: '0.5px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: availability === state.value ? state.color : 'var(--text-secondary)', boxShadow: availability === state.value ? `0 0 8px ${state.color}` : 'none' }}></span>
+                                {state.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Enforce Offline Toggle */}
+                    <div style={{ 
+                        padding: '12px 14px', 
+                        background: enforceOffline ? 'rgba(59, 130, 246, 0.08)' : 'rgba(0, 0, 0, 0.2)',
+                        border: `1px solid ${enforceOffline ? 'rgba(59, 130, 246, 0.2)' : 'var(--glass-border)'}`,
+                        borderRadius: '10px', transition: 'all 0.2s'
+                    }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={enforceOffline} 
+                                onChange={(e) => toggleEnforceOffline(e.target.checked)} 
+                                style={{ width: '16px', height: '16px', accentColor: 'var(--hextech-gold)' }}
+                            />
+                            <span style={{ color: enforceOffline ? 'var(--hextech-gold)' : 'var(--text-primary)', transition: 'color 0.2s' }}>
+                                Enforce "Offline" status (even in Champ Select)
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            )}
+
+            {/* Offline Warning */}
+            {!lcu && (
+                <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', textAlign: 'center' }}>
+                    <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>Start League of Legends to enable this feature.</span>
+                </div>
+            )}
         </div>
     );
 };

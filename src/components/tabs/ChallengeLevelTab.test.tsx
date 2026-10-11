@@ -36,6 +36,8 @@ describe('ChallengeLevelTab', () => {
 
         expect(screen.getByText('Challenge Level')).toBeDefined();
         expect(screen.getByLabelText('Challenge level preview')).toBeDefined();
+        expect(screen.getByLabelText('Challenge level preview').parentElement).toHaveClass('challenge-summary-grid');
+        expect(screen.getByText('APPLY CHALLENGE LEVEL').parentElement).toHaveClass('challenge-action-row');
         await waitFor(() => expect(props.addLog).toHaveBeenCalledWith('Challenge level synced successfully.'));
     });
 
@@ -82,5 +84,48 @@ describe('ChallengeLevelTab', () => {
 
         expect(screen.getByText('APPLY CHALLENGE LEVEL')).toBeDisabled();
         expect(screen.getByText('League client connection required.')).toBeDefined();
+    });
+
+    it('should sync official challenge summary data and show feedback', async () => {
+        const props = createMockProps();
+        props.lcuRequest.mockImplementation((method, endpoint) => {
+            if (method === 'GET' && endpoint === '/lol-challenges/v1/summary-player-data/local-player') {
+                return Promise.resolve({
+                    overallChallengeLevel: 'DIAMOND',
+                    totalChallengeScore: 4321,
+                });
+            }
+            return Promise.resolve({});
+        });
+
+        render(<ChallengeLevelTab {...props} />);
+
+        await waitFor(() => {
+            expect(screen.getByTitle('DIAMOND challenge crystal')).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.getByLabelText('Challenge Points')).toHaveValue(4321);
+        });
+
+        fireEvent.click(screen.getByTitle('Read the current challenge crystal and points from the League Client'));
+        await waitFor(() => expect(props.showToast).toHaveBeenCalledWith('Challenge level synced from League Client', 'success'));
+    });
+
+    it('should read object-shaped challenge points without rendering an object string', async () => {
+        const props = createMockProps();
+        props.lcuRequest.mockImplementation((method, endpoint) => {
+            if (method === 'GET' && endpoint === '/lol-challenges/v1/summary-player-data/local-player') {
+                return Promise.resolve({
+                    overallChallengeLevel: 'MASTER',
+                    challengePoints: { current: 9876, max: 10000 },
+                });
+            }
+            return Promise.resolve({});
+        });
+
+        render(<ChallengeLevelTab {...props} />);
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Challenge Points')).toHaveValue(9876);
+            expect(screen.getByLabelText('Challenge Points')).not.toHaveValue('[object Object]');
+        });
     });
 });

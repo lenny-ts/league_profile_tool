@@ -1,4 +1,8 @@
 mod lcu;
+mod pengu;
+mod themes;
+use themes::{list_library_themes, save_library_theme, delete_library_theme};
+use themes::{save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme};
 
 use serde_json::json;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
@@ -11,8 +15,9 @@ use tauri::{
 use std::sync::Mutex;
 use std::fs;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 struct Settings {
@@ -248,20 +253,10 @@ fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn install_pengu_plugin() -> Result<String, String> {
+async fn install_pengu_plugin(app: tauri::AppHandle) -> Result<String, String> {
+    let loader_root = pengu::ensure_loader(&app).await?;
+    let plugins_dir = loader_root.join("plugins");
     // Try common Pengu Loader installation paths
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-    
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found. Please install Pengu Loader first.")?;
-    
     // v1.1.6 doesn't support @author/ folders, use simple folder name
     let target_dir = plugins_dir.join("rank-override");
     
@@ -280,27 +275,163 @@ fn install_pengu_plugin() -> Result<String, String> {
         include_str!("../../pengu-plugin/rank-override/modules/rankOverride.js")
     ).map_err(|e| format!("Failed to write rankOverride.js: {}", e))?;
     
-    Ok(format!("Plugin installed to: {}", target_dir.display()))
+    pengu::ensure_running(&loader_root)?;
+    Ok(format!("Plugin installed and Pengu Loader started: {}", target_dir.display()))
+}
+
+#[tauri::command]
+fn ensure_pengu_running(app: tauri::AppHandle) -> Result<bool, String> {
+    let loader_root = pengu::root(&app)?;
+    if !loader_root.join("plugins").is_dir() {
+        return Ok(false);
+    }
+    pengu::ensure_running(&loader_root)?;
+    Ok(true)
+}
+
+fn pengu_rank_override_dirs(app: &tauri::AppHandle) -> Result<Vec<PathBuf>, String> {
+    let plugins_dir = pengu::plugins_dir(app)?;
+    if !plugins_dir.exists() { return Err("Pengu Loader is not installed yet".into()); }
+    Ok(vec![
+        plugins_dir.join("rank-override"),
+        plugins_dir.join("@default").join("rank-override"),
+        plugins_dir.join("@l9lenny").join("rank-override"),
+    ])
+}
+
+#[tauri::command]
+fn save_custom_background(app: tauri::AppHandle, source_path: Option<String>, fit: String, position: String, dim: u8) -> Result<String, String> {
+    let fit = match fit.as_str() {
+        "cover" | "contain" => fit,
+        _ => return Err("Invalid background fit".to_string()),
+    };
+    let position = match position.as_str() {
+        "center" | "top" | "bottom" | "left" | "right" => position,
+        _ => return Err("Invalid background position".to_string()),
+    };
+    let target_dir = pengu_rank_override_dirs(&app)?.into_iter()
+        .find(|path| path.exists())
+        .ok_or("Rank Override plugin not installed")?;
+    let assets_dir = target_dir.join("assets");
+    fs::create_dir_all(&assets_dir).map_err(|e| format!("Failed to create background assets directory: {}", e))?;
+
+    let asset_name = if let Some(path) = source_path.filter(|value| !value.trim().is_empty()) {
+        let source = PathBuf::from(path.trim());
+        let metadata = fs::metadata(&source).map_err(|e| format!("Cannot read selected image: {}", e))?;
+        if !metadata.is_file() || metadata.len() > 50 * 1024 * 1024 {
+            return Err("Background must be a file smaller than 50 MB".to_string());
+        }
+        let extension = source.extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase())
+            .ok_or("Selected file has no extension")?;
+        if !matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "webp" | "gif") {
+            return Err("Supported formats: PNG, JPG, WEBP and GIF".to_string());
+        }
+        let header = fs::read(&source).map_err(|e| format!("Cannot read selected image: {}", e))?;
+        let valid_signature = match extension.as_str() {
+            "png" => header.starts_with(b"\x89PNG\r\n\x1a\n"),
+            "jpg" | "jpeg" => header.starts_with(&[0xff, 0xd8, 0xff]),
+            "gif" => header.starts_with(b"GIF87a") || header.starts_with(b"GIF89a"),
+            "webp" => header.len() >= 12 && &header[0..4] == b"RIFF" && &header[8..12] == b"WEBP",
+            _ => false,
+        };
+        if !valid_signature {
+            return Err("Selected file content does not match its image format".to_string());
+        }
+        for old_extension in ["png", "jpg", "jpeg", "webp", "gif"] {
+            let old_asset = assets_dir.join(format!("custom-background.{}", old_extension));
+            if old_asset.exists() {
+                let _ = fs::remove_file(old_asset);
+            }
+        }
+        let name = format!("custom-background.{}", extension);
+        fs::write(assets_dir.join(&name), &header).map_err(|e| format!("Failed to install background: {}", e))?;
+        name
+    } else {
+        let config_text = fs::read_to_string(target_dir.join("custom-background.json"))
+            .map_err(|_| "Select an image before applying a custom background".to_string())?;
+        let config: serde_json::Value = serde_json::from_str(&config_text).map_err(|e| e.to_string())?;
+        config.get("asset").and_then(|value| value.as_str())
+            .and_then(|value| PathBuf::from(value).file_name().and_then(|name| name.to_str()).map(String::from))
+            .ok_or("Select an image before applying a custom background")?
+    };
+    let version = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
+    let config = serde_json::json!({
+        "enabled": true,
+        "asset": format!("assets/{}", asset_name),
+        "fit": fit,
+        "position": position,
+        "dim": dim.min(80),
+        "version": version,
+    });
+    fs::write(target_dir.join("custom-background.json"), serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?)
+        .map_err(|e| format!("Failed to save background config: {}", e))?;
+    Ok(asset_name)
+}
+
+#[tauri::command]
+fn read_custom_background_preview(path: String) -> Result<String, String> {
+    let source = PathBuf::from(path.trim());
+    let metadata = fs::metadata(&source).map_err(|e| format!("Cannot read selected image: {}", e))?;
+    if !metadata.is_file() || metadata.len() > 8 * 1024 * 1024 {
+        return Ok(String::new());
+    }
+    let extension = source.extension().and_then(|value| value.to_str()).unwrap_or("").to_ascii_lowercase();
+    let mime = match extension.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => return Err("Unsupported image format".to_string()),
+    };
+    let bytes = fs::read(source).map_err(|e| format!("Cannot read selected image: {}", e))?;
+    Ok(format!("data:{};base64,{}", mime, BASE64.encode(bytes)))
+}
+
+#[tauri::command]
+fn clear_custom_background(app: tauri::AppHandle) -> Result<String, String> {
+    let mut cleared = false;
+    for target_dir in pengu_rank_override_dirs(&app)? {
+        if !target_dir.exists() { continue; }
+        for extension in ["png", "jpg", "jpeg", "webp", "gif"] {
+            let asset = target_dir.join("assets").join(format!("custom-background.{}", extension));
+            if asset.exists() { let _ = fs::remove_file(asset); }
+        }
+        fs::write(target_dir.join("custom-background.json"), "{\n  \"enabled\": false\n}")
+            .map_err(|e| format!("Failed to clear background config: {}", e))?;
+        cleared = true;
+    }
+    if !cleared { return Err("Rank Override plugin not installed".to_string()); }
+    Ok("Custom background cleared".to_string())
 }
 
 #[tauri::command]
 fn save_rank_config(
+    app: tauri::AppHandle,
     tier: String,
     division: String,
     queue: String,
+    league_points: u32,
+    last_season_tier: String,
+    border_tier: String,
+    banner_tier: String,
+    honor_level: String,
+    mastery_score: String,
+    mastery_level: String,
+    mastery_level2: String,
+    mastery_level3: String,
+    mastery_champion_id: String,
+    mastery_champion_id2: String,
+    mastery_champion_id3: String,
+    trophy_theme: String,
+    trophy_bracket: u32,
+    trophy_tier: u32,
+    clash_banner_theme: String,
+    clash_banner_level: u32,
     overview_enabled: bool,
 ) -> Result<String, String> {
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found")?;
+    let plugins_dir = pengu::plugins_dir(&app)?;
 
     // Write to all possible plugin locations
     let locations = vec![
@@ -313,6 +444,23 @@ fn save_rank_config(
         "tier": tier,
         "division": division,
         "queue": queue,
+        "leaguePoints": league_points,
+        "lastSeasonTier": last_season_tier,
+        "borderTier": border_tier,
+        "bannerTier": banner_tier,
+        "honorLevel": honor_level,
+        "masteryScore": mastery_score,
+        "masteryLevel": mastery_level,
+        "masteryLevel2": mastery_level2,
+        "masteryLevel3": mastery_level3,
+        "masteryChampionId": mastery_champion_id,
+        "masteryChampionId2": mastery_champion_id2,
+        "masteryChampionId3": mastery_champion_id3,
+        "trophyTheme": trophy_theme,
+        "trophyBracket": trophy_bracket,
+        "trophyTier": trophy_tier,
+        "clashBannerTheme": clash_banner_theme,
+        "clashBannerLevel": clash_banner_level,
         "overviewEnabled": overview_enabled,
     });
 
@@ -338,24 +486,14 @@ fn save_rank_config(
 }
 
 #[tauri::command]
-fn open_pengu_plugins_folder() -> Result<String, String> {
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-    
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found. Please install Pengu Loader first.")?;
+fn open_pengu_plugins_folder(app: tauri::AppHandle) -> Result<String, String> {
+    let plugins_dir = pengu::plugins_dir(&app)?;
     
     // Open the folder in explorer
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("explorer")
-            .arg(plugins_dir)
+            .arg(&plugins_dir)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
     }
@@ -369,8 +507,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![])))
         .plugin(tauri_plugin_log::Builder::new().build())
         .setup(|app| {
@@ -432,7 +568,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, open_pengu_plugins_folder, save_rank_config])
+        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, ensure_pengu_running, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_, _| {});

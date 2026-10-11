@@ -1,6 +1,6 @@
 [package]
 name = "league-profile-tool"
-version = "1.13.0"
+version = "2.0.0"
 description = "A custom application"
 authors = ["Lenny"]
 edition = "2021"
@@ -22,8 +22,6 @@ tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
-tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-log = "2"
 serde = { version = "1", features = ["derive"] }
@@ -32,3 +30,5 @@ reqwest = { version = "0.12.12", features = ["json", "rustls-tls"] }
 base64 = "0.23.1"
 sysinfo = "0.39.3"
 dirs = "5"
+zip = "2.4"
+windows = { version = "0.61", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

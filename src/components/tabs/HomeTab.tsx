@@ -15,7 +15,8 @@ import {
     Cpu,
     Users,
     UserMinus,
-    Gem
+    Gem,
+    PanelsTopLeft
 } from 'lucide-react';
 import { LcuInfo } from '../../hooks/useLcu';
 import { LcuRequestFn } from '../../utils/chatMe';
@@ -82,21 +83,32 @@ const HomeTab: React.FC<HomeTabProps> = ({ lcu, clientVersion, setActiveTab, lcu
             options: [
                 { id: 'profile', title: 'Profile Bio', desc: 'Update status message and biography.', icon: <Layout size={24} /> },
                 { id: 'background', title: 'Background', desc: 'Set any champion skin as your background.', icon: <Image size={24} /> },
+                { id: 'themes', title: 'Client Themes', desc: 'Import, create and apply client CSS themes.', icon: <PanelsTopLeft size={24} /> },
                 { id: 'icons', title: 'Icon Swapper', desc: 'Equip hidden summoner icons instantly.', icon: <UserCircle size={24} /> },
                 { id: 'tokens', title: 'Profile Tokens', desc: 'Customize your profile badges.', icon: <Award size={24} /> },
+                { id: 'presets', title: 'Presets', desc: 'Save and load full profile presets.', icon: <Layers size={24} /> },
             ]
         },
         {
             id: 'enhancements',
             title: 'Enhancements',
-            desc: 'Advanced tools and lobby management.',
+            desc: 'Advanced profile enhancements.',
             icon: <Sparkles size={24} />,
             options: [
-                { id: 'lobby', title: 'Lobby Manager', desc: 'Mass invite friends and manage your lobby.', icon: <Users size={24} /> },
-                { id: 'friends', title: 'Friend Cleaner', desc: 'Identify and remove inactive friends.', icon: <UserMinus size={24} /> },
                 { id: 'rank', title: 'Rank Overrides', desc: 'Modify visible Solo/Duo rankings.', icon: <Trophy size={24} /> },
+                { id: 'overview', title: 'Overview Cards', desc: 'Customize Honor, Mastery and Clash cards.', icon: <PanelsTopLeft size={24} /> },
                 { id: 'challenge', title: 'Challenge Level', desc: 'Customize your challenge crystal and score.', icon: <Gem size={24} /> },
                 { id: 'music', title: 'Music Sync', desc: 'Auto-update bio with your current track.', icon: <Disc3 size={24} /> },
+            ]
+        },
+        {
+            id: 'social',
+            title: 'Social',
+            desc: 'Friends and lobby management.',
+            icon: <Users size={24} />,
+            options: [
+                { id: 'friends', title: 'Friend Cleaner', desc: 'Identify and remove inactive friends.', icon: <UserMinus size={24} /> },
+                { id: 'lobby', title: 'Lobby Manager', desc: 'Mass invite friends and manage your lobby.', icon: <Users size={24} /> },
             ]
         },
         {
@@ -127,10 +139,10 @@ const HomeTab: React.FC<HomeTabProps> = ({ lcu, clientVersion, setActiveTab, lcu
             {/* Profile Banner */}
             <div className="card profile-header-card" style={{ 
                 marginTop: '10px',
-                marginBottom: '20px', 
-                padding: '15px 20px', 
-                background: 'linear-gradient(90deg, rgba(200, 155, 60, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)',
-                border: '1px solid rgba(200, 155, 60, 0.2)',
+                marginBottom: '24px', 
+                padding: '20px 24px', 
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '20px',
@@ -138,42 +150,44 @@ const HomeTab: React.FC<HomeTabProps> = ({ lcu, clientVersion, setActiveTab, lcu
             }}>
                 <div style={{ position: 'relative' }}>
                     <div style={{ 
-                        width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', 
-                        border: '2px solid var(--hextech-gold)'
+                        width: '64px', height: '64px', borderRadius: '12px', overflow: 'hidden', 
+                        border: '2px solid var(--hextech-gold)',
+                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)'
                     }}>
                         {summoner ? (
                             <img src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summoner.profileIconId}.jpg`} alt="" style={{ width: '100%', height: '100%' }} />
                         ) : (
-                            <div style={{ width: '100%', height: '100%', background: '#222' }} />
+                            <div style={{ width: '100%', height: '100%', background: '#27272a' }} />
                         )}
                     </div>
                     <div style={{ 
-                        position: 'absolute', bottom: '-4px', right: '-4px', 
-                        background: 'var(--hextech-gold)', color: 'black', 
-                        fontSize: '0.55rem', fontWeight: 'bold', padding: '1px 5px', borderRadius: '6px'
+                        position: 'absolute', bottom: '-6px', right: '-6px', 
+                        background: 'var(--hextech-gold)', color: '#09090b', 
+                        fontSize: '0.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: '6px',
+                        boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
                     }}>
                         {summoner ? summoner.summonerLevel : '??'}
                     </div>
                 </div>
 
                 <div style={{ flex: 1 }}>
-                    <h2 style={{ margin: 0, color: 'white', fontSize: '1.2rem', fontWeight: 700 }}>
+                    <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 700 }}>
                         {getSummonerName()}
                     </h2>
-                    <div style={{ display: 'flex', gap: '15px', marginTop: '3px', alignItems: 'center' }}>
-                        <div className={`connection-status-pill ${lcu ? 'connected' : 'disconnected'}`} style={{ margin: 0, fontSize: '0.55rem', padding: '2px 8px' }}>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '6px', alignItems: 'center' }}>
+                        <div className={`connection-status-pill ${lcu ? 'connected' : 'disconnected'}`} style={{ margin: 0, fontSize: '0.6rem', padding: '3px 10px' }}>
                             <div className="status-dot"></div>
                             {lcu ? 'CONNECTED' : 'WAITING'}
                         </div>
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem' }}>v{clientVersion}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>v{clientVersion}</span>
                     </div>
                 </div>
             </div>
 
             {/* View Title / Back Button */}
-            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {view === 'category-detail' && (
-                    <button type="button" className="ghost-btn" onClick={() => setView('categories')} style={{ padding: '5px 10px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <button type="button" className="ghost-btn" onClick={() => setView('categories')} style={{ padding: '6px 12px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <ArrowLeft size={14} /> BACK
                     </button>
                 )}

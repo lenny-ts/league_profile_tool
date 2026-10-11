@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, ExternalLink } from 'lucide-react';
+import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, AppWindow } from 'lucide-react';
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY } from '../../storageKeys';
+import { SAVED_AUTO_ENFORCE_KEY, SAVED_ENFORCE_OFFLINE_KEY, SAVED_ICON_KEY, ALL_SAVED_KEYS, PENGU_PLUGIN_INSTALLED_KEY, PENGU_OVERVIEW_OVERRIDE_KEY, SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY, SAVED_OVERVIEW_CARDS_KEY, SAVED_CUSTOM_BACKGROUND_KEY, SAVED_WINDOW_SIZE_KEY } from '../../storageKeys';
 import { patchChatLol } from '../../utils/chatMe';
+import { applyWindowSizePreset, getSavedWindowSizePreset, WINDOW_SIZE_PRESETS, WindowSizePreset } from '../../utils/windowSize';
 
 const MAX_STORAGE_VALUE_LENGTH = 10000;
 
@@ -35,6 +36,21 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
     const [autoEnforce, setAutoEnforce] = useState(() => localStorage.getItem(SAVED_AUTO_ENFORCE_KEY) === 'true');
     const [pluginInstalled, setPluginInstalled] = useState(() => localStorage.getItem(PENGU_PLUGIN_INSTALLED_KEY) === 'true');
+    const [windowSizePreset, setWindowSizePreset] = useState<WindowSizePreset>(getSavedWindowSizePreset);
+
+    const changeWindowSize = async (value: WindowSizePreset) => {
+        try {
+            await applyWindowSizePreset(value);
+            localStorage.setItem(SAVED_WINDOW_SIZE_KEY, value);
+            setWindowSizePreset(value);
+            const preset = WINDOW_SIZE_PRESETS.find(item => item.value === value);
+            addLog(`Window size changed to ${preset?.width}x${preset?.height}.`);
+            showToast?.("Window size updated!", "success");
+        } catch (err) {
+            addLog(`Window resize failed: ${err}`);
+            showToast?.("Window resize failed", "error");
+        }
+    };
 
     const toggleAutoEnforce = (checked: boolean) => {
         setAutoEnforce(checked);
@@ -50,6 +66,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [resetChecks, setResetChecks] = useState<Record<string, boolean>>({
         rank: true,
+        overview: true,
         challenge: true,
         background: true,
         tokens: true,
@@ -60,8 +77,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
     const resetLabels: Record<string, string> = {
         rank: "Rank overrides",
+        overview: "Overview Cards",
         challenge: "Challenge overrides",
-        background: "Background skin",
+        background: "Background skin & custom",
         tokens: "Tokens, Title, Banner & Crest",
         icon: "Profile icon",
         status: "Status & Bio",
@@ -104,10 +122,65 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
     const clearAllSettings = async () => {
         const savedIconVal = resetChecks.icon ? localStorage.getItem(SAVED_ICON_KEY) : null;
+        let overviewCards: Record<string, unknown> = {};
+        try {
+            overviewCards = JSON.parse(localStorage.getItem(SAVED_OVERVIEW_CARDS_KEY) || '{}') as Record<string, unknown>;
+        } catch {
+            overviewCards = {};
+        }
 
         if (resetChecks.enforcer) {
             ALL_SAVED_KEYS.forEach(key => localStorage.removeItem(key));
             setAutoEnforce(false);
+        }
+
+        if (resetChecks.rank) {
+            [SAVED_RANK_QUEUE_KEY, SAVED_RANK_TIER_KEY, SAVED_RANK_DIV_KEY, SAVED_RANK_LP_KEY, SAVED_LAST_SEASON_RANK_KEY, SAVED_RANK_BORDER_KEY, SAVED_RANK_BANNER_KEY].forEach(key => localStorage.removeItem(key));
+        }
+
+        if (resetChecks.overview) {
+            localStorage.removeItem(SAVED_OVERVIEW_CARDS_KEY);
+            localStorage.removeItem(PENGU_OVERVIEW_OVERRIDE_KEY);
+        }
+
+        if (resetChecks.background) {
+            localStorage.removeItem(SAVED_CUSTOM_BACKGROUND_KEY);
+            try {
+                await invoke("clear_custom_background");
+            } catch (err) {
+                addLog(`Custom background reset skipped: ${err}`);
+            }
+        }
+
+        if (resetChecks.rank || resetChecks.overview) {
+            try {
+                await invoke("save_rank_config", {
+                    tier: resetChecks.rank ? "NONE" : localStorage.getItem(SAVED_RANK_TIER_KEY) || "NONE",
+                    division: resetChecks.rank ? "I" : localStorage.getItem(SAVED_RANK_DIV_KEY) || "I",
+                    queue: resetChecks.rank ? "RANKED_SOLO_5x5" : localStorage.getItem(SAVED_RANK_QUEUE_KEY) || "RANKED_SOLO_5x5",
+                    leaguePoints: resetChecks.rank ? 0 : Number(localStorage.getItem(SAVED_RANK_LP_KEY)) || 0,
+                    lastSeasonTier: resetChecks.rank ? "UNRANKED" : localStorage.getItem(SAVED_LAST_SEASON_RANK_KEY) || "UNRANKED",
+                    borderTier: resetChecks.rank ? "AUTO" : localStorage.getItem(SAVED_RANK_BORDER_KEY) || "AUTO",
+                    bannerTier: resetChecks.rank ? "AUTO" : localStorage.getItem(SAVED_RANK_BANNER_KEY) || "AUTO",
+                    honorLevel: resetChecks.overview ? "AUTO" : String(overviewCards.honorLevel || "AUTO"),
+                    masteryScore: resetChecks.overview ? "" : String(overviewCards.masteryScore || ""),
+                    masteryLevel: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel || "AUTO"),
+                    masteryLevel2: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel2 || "AUTO"),
+                    masteryLevel3: resetChecks.overview ? "AUTO" : String(overviewCards.masteryLevel3 || "AUTO"),
+                    masteryChampionId: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId || "AUTO"),
+                    masteryChampionId2: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId2 || "AUTO"),
+                    masteryChampionId3: resetChecks.overview ? "AUTO" : String(overviewCards.masteryChampionId3 || "AUTO"),
+                    trophyTheme: resetChecks.overview ? "AUTO" : String(overviewCards.trophyTheme || "AUTO"),
+                    trophyBracket: resetChecks.overview ? 4 : Number(overviewCards.trophyBracket) || 4,
+                    trophyTier: resetChecks.overview ? 4 : Number(overviewCards.trophyTier) || 4,
+                    clashBannerTheme: resetChecks.overview ? "AUTO" : String(overviewCards.clashBannerTheme || "AUTO"),
+                    clashBannerLevel: resetChecks.overview ? 1 : Number(overviewCards.clashBannerLevel) || 1,
+                    overviewEnabled: resetChecks.overview ? false : localStorage.getItem(PENGU_OVERVIEW_OVERRIDE_KEY) !== "false",
+                });
+            } catch (err) {
+                // Pengu Loader may not be installed; the LCU reset still proceeds.
+                addLog(`Rank override config reset skipped: ${err}`);
+            }
         }
 
         if (!lcuRequest) {
@@ -204,10 +277,25 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
     };
 
     return (
-        <div className="tab-content fadeIn">
-            <div className="card">
-                <h3 className="card-title">Technical Settings</h3>
-                <button type="button" className="settings-row" onClick={async () => {
+        <div className="tab-content fadeIn ui-page">
+            <div className="ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Settings</h2>
+                    <p className="ui-page-header__description">Configure startup behavior, backups, integrations, and saved profile data.</p>
+                </div>
+            </div>
+
+            <div className="card ui-panel">
+                <div className="ui-section-header">
+                    <div className="ui-section-header__icon">
+                        <Cpu size={16} style={{ color: 'var(--hextech-gold)' }} />
+                    </div>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Technical Settings</h3>
+                        <p className="ui-section-header__description">Choose how the application behaves in Windows and with the League Client.</p>
+                    </div>
+                </div>
+                <button type="button" className="settings-row ui-settings-row" onClick={async () => {
                     const newState = !isAutostartEnabled;
                     try {
                         if (newState) await enable(); else await disable();
@@ -229,7 +317,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </span>
                 </button>
 
-                <button type="button" className="settings-row" onClick={toggleMinimizeToTray} style={{ marginTop: '10px' }}>
+                <button type="button" className="settings-row ui-settings-row" onClick={toggleMinimizeToTray}>
                     <div className="settings-info">
                         <span className="settings-label">Minimize to Tray</span>
                         <p className="settings-desc">Close button will minimize the app to the system tray.</p>
@@ -241,7 +329,18 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </span>
                 </button>
 
-                <button type="button" className="settings-row" onClick={() => toggleAutoEnforce(!autoEnforce)} style={{ marginTop: '10px' }}>
+                <div className="settings-row ui-settings-row settings-window-size-row">
+                    <AppWindow size={18} style={{ color: 'var(--hextech-gold)', flexShrink: 0 }} />
+                    <div className="settings-info">
+                        <label className="settings-label" htmlFor="window-size-preset">Default Window Size</label>
+                        <p className="settings-desc">Applied immediately and restored whenever the app starts.</p>
+                    </div>
+                    <select id="window-size-preset" className="window-size-select" value={windowSizePreset} onChange={(event) => changeWindowSize(event.target.value as WindowSizePreset)}>
+                        {WINDOW_SIZE_PRESETS.map(preset => <option key={preset.value} value={preset.value}>{preset.label} - {preset.width} x {preset.height}</option>)}
+                    </select>
+                </div>
+
+                <button type="button" className="settings-row ui-settings-row" onClick={() => toggleAutoEnforce(!autoEnforce)}>
                     <div className="settings-info">
                         <span className="settings-label">Auto-Restore Profile</span>
                         <p className="settings-desc">Automatically re-apply profile overrides (rank, icons, status) when the League Client opens.</p>
@@ -254,21 +353,23 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 </button>
 
                 {showResetConfirm ? (
-                    <div style={{ marginTop: '10px', padding: '12px 16px', background: 'rgba(255,107,107,0.04)', borderRadius: 'var(--radius)' }}>
-                        <span className="settings-label" style={{ color: 'var(--text-secondary)', marginBottom: '10px', display: 'block' }}>What to clear?</span>
-                        {Object.entries(resetLabels).map(([key, label]) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
-                                <input type="checkbox" checked={resetChecks[key]} onChange={() => setResetChecks(prev => ({ ...prev, [key]: !prev[key] }))} style={{ accentColor: '#ff6b6b' }} />
-                                {label}
-                            </label>
-                        ))}
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                            <button type="button" className="ghost-btn" style={{ color: '#c0392b', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={clearAllSettings}><Check size={14} />Clear Selected</button>
-                            <button type="button" className="ghost-btn" onClick={() => setShowResetConfirm(false)} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><X size={14} />Cancel</button>
+                    <div style={{ marginTop: '10px', padding: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.18)', borderRadius: '10px' }}>
+                        <span className="settings-label" style={{ color: '#f87171', marginBottom: '12px', display: 'block' }}>What to clear?</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px 16px' }}>
+                            {Object.entries(resetLabels).map(([key, label]) => (
+                                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                                    <input type="checkbox" checked={resetChecks[key]} onChange={() => setResetChecks(prev => ({ ...prev, [key]: !prev[key] }))} style={{ accentColor: '#ef4444' }} />
+                                    {label}
+                                </label>
+                            ))}
+                        </div>
+                        <div className="settings-confirm-actions" style={{ marginTop: '14px' }}>
+                            <button type="button" className="ghost-btn" style={{ color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px' }} onClick={clearAllSettings}><Check size={14} />Clear Selected</button>
+                            <button type="button" className="ghost-btn" onClick={() => setShowResetConfirm(false)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px' }}><X size={14} />Cancel</button>
                         </div>
                     </div>
                 ) : (
-                    <button type="button" className="settings-row" onClick={() => setShowResetConfirm(true)} style={{ marginTop: '10px' }}>
+                    <button type="button" className="settings-row ui-settings-row settings-row--danger" onClick={() => setShowResetConfirm(true)}>
                         <div className="settings-info">
                             <span className="settings-label">Clear Saved Data</span>
                             <p className="settings-desc">Reset profile overrides, rank, tokens, status, icon &amp; more</p>
@@ -278,39 +379,52 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 )}
             </div>
 
-            <div className="card">
-                <h3 className="card-title">Backup &amp; Restore</h3>
-                <p className="settings-desc" style={{ marginBottom: '10px' }}>
-                    Export all saved settings to a JSON file, or import a previously exported backup.
-                </p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" className="ghost-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={exportSettings}>
-                        <Download size={16} /> Export
-                    </button>
-                    <button type="button" className="ghost-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={importSettings}>
-                        <Upload size={16} /> Import
-                    </button>
+            <div className="card ui-panel">
+                <div className="ui-section-header settings-backup-row" style={{ marginBottom: 0 }}>
+                    <div className="ui-section-header__icon">
+                            <Download size={16} style={{ color: 'var(--hextech-gold)' }} />
+                    </div>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Backup &amp; Restore</h3>
+                        <p className="ui-section-header__description">Export your saved profile settings or restore them from a JSON backup.</p>
+                    </div>
+                    <div className="ui-section-header__actions settings-backup-actions">
+                        <button type="button" className="ghost-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px' }} onClick={exportSettings}>
+                            <Download size={15} /> Export
+                        </button>
+                        <button type="button" className="ghost-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px' }} onClick={importSettings}>
+                            <Upload size={15} /> Import
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <Puzzle size={20} style={{ color: 'var(--hextech-gold)' }} />
-                    <h3 className="card-title" style={{ margin: 0 }}>Pengu Loader Integration</h3>
+            <div className="card ui-panel">
+                <div className="ui-section-header settings-integration-header">
+                    <div className="ui-section-header__icon">
+                            <Puzzle size={16} style={{ color: 'var(--hextech-gold)' }} />
+                    </div>
+                    <div className="ui-section-header__copy">
+                        <h3 className="ui-section-header__title">Pengu Loader Integration</h3>
+                    <p className="ui-section-header__description">Managed automatically for themes, backgrounds and profile enhancements.</p>
+                    </div>
+                    <span className="ui-section-header__actions" style={{ padding: '4px 9px', borderRadius: '999px', background: pluginInstalled ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: pluginInstalled ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)', color: pluginInstalled ? '#22c55e' : '#f59e0b', fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {pluginInstalled ? 'PLUGIN READY' : 'SETUP REQUIRED'}
+                    </span>
                 </div>
-                <p className="settings-desc" style={{ marginBottom: '12px' }}>
-                    Install the Rank Override plugin to show custom ranks in the League client's profile overview. 
-                    Requires <a href="https://github.com/PenguLoader/PenguLoader" target="_blank" rel="noreferrer" style={{ color: 'var(--hextech-gold)' }}>Pengu Loader</a> to be installed.
+                <p className="settings-desc" style={{ margin: '0 0 14px', lineHeight: 1.5 }}>
+                    Install the Rank Override plugin to show custom ranks in the League client's profile overview.
+                    The first setup downloads the official MIT-licensed package into the app data folder and preserves your plugins and settings.
                     {pluginInstalled && (
-                        <span style={{ color: '#2ecc71', marginLeft: '8px' }}>✓ Plugin installed</span>
+                        <span style={{ color: '#22c55e', marginLeft: '8px' }}>✓ Plugin installed</span>
                     )}
                 </p>
                 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="settings-integration-actions">
                     <button 
                         type="button" 
                         className="ghost-btn" 
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px' }}
                         onClick={async () => {
                             try {
                                 await invoke("install_pengu_plugin");
@@ -324,13 +438,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                             }
                         }}
                     >
-                        <Puzzle size={16} /> {pluginInstalled ? 'Reinstall Plugin' : 'Install Plugin'}
+                        <Puzzle size={16} /> {pluginInstalled ? 'Update Plugins' : 'Install Pengu & Plugins'}
                     </button>
                     
                     <button 
                         type="button" 
                         className="ghost-btn" 
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px' }}
                         onClick={async () => {
                             try {
                                 await invoke("open_pengu_plugins_folder");
@@ -344,22 +458,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                         <FolderOpen size={16} /> Open Plugins Folder
                     </button>
                     
-                    <a 
-                        href="https://github.com/PenguLoader/PenguLoader/releases" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="ghost-btn"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
-                    >
-                        <ExternalLink size={16} /> Download Pengu Loader
-                    </a>
                 </div>
                 
-                <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    <strong style={{ color: 'var(--hextech-gold)' }}>Manual Installation:</strong><br />
-                    Copy the complete <code>rank-override</code> folder to:<br />
-                    <code>C:\Program Files\Pengu Loader\plugins\rank-override\</code><br />
-                    Then restart the League Client and enable <strong>Profile Overview</strong> from the Rank tab.
+                <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(0,0,0,0.22)', border: '1px solid var(--glass-border)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                    <strong style={{ color: 'var(--hextech-gold)' }}>Automatic setup:</strong><br />
+                    The official runtime and LPT plugins are placed under <code>%LOCALAPPDATA%\League Profile Tool\Pengu Loader</code>.<br />
+                    Restart the League Client after the first install or plugin update.
                 </div>
             </div>
 
@@ -379,19 +483,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                 </div>
             )}
-
-            <div className="card" style={{ marginTop: '12px', background: 'rgba(200, 155, 60, 0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <Cpu size={24} style={{ color: 'var(--hextech-gold)' }} />
-                    <div>
-                        <h4 style={{ margin: 0, color: 'var(--hextech-gold)', fontSize: '0.9rem' }}>Bridge Interface</h4>
-                        <p style={{ margin: '5px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            High-performance LCU communication layer via Tauri v2 Core.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
 
         </div>
     );

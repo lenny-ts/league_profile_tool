@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import { LcuInfo } from '../../hooks/useLcu';
-import { SAVED_BACKGROUND_KEY } from '../../hooks/useAutoRestore';
+import { PENGU_PLUGIN_INSTALLED_KEY, SAVED_BACKGROUND_KEY, SAVED_CUSTOM_BACKGROUND_KEY } from '../../storageKeys';
 import { patchChatLol } from '../../utils/chatMe';
-import { Search, Image, Loader2, Hash } from 'lucide-react';
+import { disableCustomBackground } from '../../utils/disableCustomBackground';
+import { Search, Image, Loader2, Hash, Upload, Trash2, Film } from 'lucide-react';
 import supplementalSkins from '../../data/supplemental-skins.json';
 
 interface BackgroundTabProps {
@@ -34,6 +37,29 @@ interface SkinSearchEntry {
 }
 
 const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default';
+
+interface CustomBackgroundSettings {
+    active: boolean;
+    fileName: string;
+    fit: 'cover' | 'contain';
+    position: 'center' | 'top' | 'bottom' | 'left' | 'right';
+    dim: number;
+}
+
+function getSavedCustomBackground(): CustomBackgroundSettings {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SAVED_CUSTOM_BACKGROUND_KEY) || '{}') as Partial<CustomBackgroundSettings>;
+        return {
+            active: saved.active === true,
+            fileName: typeof saved.fileName === 'string' ? saved.fileName : '',
+            fit: saved.fit === 'contain' ? 'contain' : 'cover',
+            position: ['center', 'top', 'bottom', 'left', 'right'].includes(saved.position || '') ? saved.position! : 'center',
+            dim: saved.dim === undefined ? 20 : Math.min(80, Math.max(0, Number(saved.dim) || 0)),
+        };
+    } catch {
+        return { active: false, fileName: '', fit: 'cover', position: 'center', dim: 20 };
+    }
+}
 
 function cdnUrl(path: string): string {
     return CDRAGON_BASE + path.replace('/lol-game-data/assets', '').toLowerCase();
@@ -100,7 +126,17 @@ function groupChampionsByName(list: ChampionSummary[]): ChampionSummary[] {
 }
 
 const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, lcuRequest }) => {
+    const savedCustomBackground = useRef(getSavedCustomBackground()).current;
+    const [backgroundMode, setBackgroundMode] = useState<'riot' | 'custom'>('riot');
     const [loading, setLoading] = useState(false);
+    const [customLoading, setCustomLoading] = useState(false);
+    const [customSourcePath, setCustomSourcePath] = useState('');
+    const [customPreview, setCustomPreview] = useState('');
+    const [customActive, setCustomActive] = useState(savedCustomBackground.active);
+    const [customFileName, setCustomFileName] = useState(savedCustomBackground.fileName);
+    const [customFit, setCustomFit] = useState<'cover' | 'contain'>(savedCustomBackground.fit);
+    const [customPosition, setCustomPosition] = useState<CustomBackgroundSettings['position']>(savedCustomBackground.position);
+    const [customDim, setCustomDim] = useState(savedCustomBackground.dim);
     const [champions, setChampions] = useState<ChampionSummary[]>([]);
     const [champSearch, setChampSearch] = useState('');
     const [selectedChampion, setSelectedChampion] = useState<ChampionSummary | null>(null);
@@ -117,6 +153,7 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     const [allSkinsLoaded, setAllSkinsLoaded] = useState(false);
     const skinCacheRef = useRef<Map<number, SkinEntry[]>>(new Map());
     const skinGridRef = useRef<HTMLDivElement>(null);
+    const applySkinButtonRef = useRef<HTMLButtonElement>(null);
     const allSkinsRef = useRef<SkinSearchEntry[]>([]);
     const searchRef = useRef<HTMLDivElement>(null);
 
@@ -252,6 +289,14 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
         if (skinGridRef.current) skinGridRef.current.scrollTop = 0;
     }, [selectedChampion]);
 
+    useEffect(() => {
+        if (!selectedSkin) return;
+        applySkinButtonRef.current?.scrollIntoView?.({
+            behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+            block: 'nearest',
+        });
+    }, [selectedSkin]);
+
     const filteredChampions = champSearch.trim()
         ? champions.filter(c =>
             c.name.toLowerCase().includes(champSearch.toLowerCase()) ||
@@ -290,15 +335,13 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     const applyBackground = async (skinId: number, skinName: string) => {
         if (!lcu) return;
         setLoading(true);
+        let applied = false;
         try {
             await lcuRequest('POST', '/lol-summoner/v1/current-summoner/summoner-profile', {
                 key: 'backgroundSkinId',
                 value: skinId,
             });
-            localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
-            showToast(`Background set to ${skinName}!`, 'success');
-            addLog(`Profile background updated: ${skinName} (ID: ${skinId})`);
-            setCurrentBgId(skinId);
+            applied = true;
         } catch (err) {
             addLog(`Official background update failed (${err}). Trying force method...`);
             try {
@@ -306,18 +349,94 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                     ...current,
                     backgroundSkinId: skinId.toString()
                 }));
-                
-                localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
-                showToast(`Background forced to ${skinName}!`, 'success');
-                addLog(`Profile background forced: ${skinName} (ID: ${skinId})`);
-                setCurrentBgId(skinId);
+                applied = true;
             } catch (forceErr) {
                 const msg = forceErr instanceof Error ? forceErr.message : String(forceErr);
                 showToast('Failed to set background', 'error');
                 addLog(`Background update failed: ${msg}`);
             }
         } finally {
+            if (applied) {
+                localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
+                setCurrentBgId(skinId);
+                try {
+                    await disableCustomBackground();
+                    setCustomActive(false);
+                    setCustomPreview('');
+                    setCustomFileName('');
+                    setCustomSourcePath('');
+                    showToast(`Background set to ${skinName}!`, 'success');
+                    addLog(`Profile background updated: ${skinName} (ID: ${skinId})`);
+                } catch (err) {
+                    showToast('Skin saved, but the custom background could not be removed.', 'error');
+                    addLog(`Failed to remove custom background: ${err}`);
+                }
+            }
             setLoading(false);
+        }
+    };
+
+    const chooseCustomBackground = async () => {
+        const selected = await open({
+            multiple: false,
+            filters: [{ name: 'Images and animations', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+        });
+        if (!selected) return;
+        const path = Array.isArray(selected) ? selected[0] : selected;
+        setCustomSourcePath(path);
+        setCustomFileName(path.split(/[\\/]/).pop() || 'Custom background');
+        try {
+            setCustomPreview(await invoke<string>('read_custom_background_preview', { path }));
+        } catch {
+            setCustomPreview('');
+        }
+    };
+
+    const applyCustomBackground = async () => {
+        if (!customSourcePath && !customActive) return;
+        setCustomLoading(true);
+        try {
+            await invoke('install_pengu_plugin');
+            const installedName = await invoke<string>('save_custom_background', {
+                sourcePath: customSourcePath || null,
+                fit: customFit,
+                position: customPosition,
+                dim: customDim,
+            });
+            const settings: CustomBackgroundSettings = { active: true, fileName: customFileName || installedName, fit: customFit, position: customPosition, dim: customDim };
+            localStorage.setItem(SAVED_CUSTOM_BACKGROUND_KEY, JSON.stringify(settings));
+            localStorage.setItem(PENGU_PLUGIN_INSTALLED_KEY, 'true');
+            setCustomActive(true);
+            setCustomFileName(settings.fileName);
+            setCustomSourcePath('');
+            showToast('Custom profile background applied!', 'success');
+            addLog(`Custom profile background applied: ${settings.fileName}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            showToast(`Custom background failed: ${message}`, 'error');
+            addLog(`Custom profile background failed: ${message}`);
+        } finally {
+            setCustomLoading(false);
+        }
+    };
+
+    const clearCustomBackground = async () => {
+        setCustomLoading(true);
+        try {
+            await invoke('clear_custom_background');
+            localStorage.removeItem(SAVED_CUSTOM_BACKGROUND_KEY);
+            setCustomActive(false);
+            setCustomSourcePath('');
+            setCustomPreview('');
+            setCustomFileName('');
+            showToast('Custom background removed.', 'success');
+            addLog('Custom profile background removed.');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            showToast(`Could not remove custom background: ${message}`, 'error');
+            addLog(`Custom profile background removal failed: ${message}`);
+        } finally {
+            setCustomLoading(false);
         }
     };
 
@@ -329,14 +448,67 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     };
 
     return (
-        <div className="tab-content fadeIn">
-            {/* 1. Direct Skin ID Card (Always at the top) */}
-            <div className="card" style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <Hash size={18} style={{ color: 'var(--hextech-gold)' }} />
-                    <h3 className="card-title" style={{ margin: 0 }}>Direct Skin ID</h3>
+        <div className="tab-content fadeIn ui-page">
+            <div className="background-tab-header ui-page-header">
+                <div className="ui-page-header__copy">
+                    <h2 className="ui-page-header__title">Background</h2>
+                    <p className="ui-page-header__description">Choose a Riot skin or use your own image or animated GIF.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            </div>
+
+            <div className="background-mode-switch card" role="tablist" aria-label="Background source">
+                <button type="button" role="tab" aria-label="Riot Skins" aria-selected={backgroundMode === 'riot'} className={backgroundMode === 'riot' ? 'active' : ''} onClick={() => setBackgroundMode('riot')}><Image size={18} /><span><strong>Riot Skins</strong><small>Browse official champion splash art</small></span></button>
+                <button type="button" role="tab" aria-label="Custom / GIF" aria-selected={backgroundMode === 'custom'} className={backgroundMode === 'custom' ? 'active' : ''} onClick={() => setBackgroundMode('custom')}><Film size={18} /><span><strong>Custom / GIF</strong><small>Upload your own static or animated background</small></span></button>
+            </div>
+
+            {backgroundMode === 'custom' && <div className="card custom-background-card ui-panel" style={{ marginBottom: '12px', flexShrink: 0 }}>
+                <div className="custom-background-layout">
+                    <div className="custom-background-preview" style={{ backgroundSize: customFit, backgroundPosition: customPosition }}>
+                        {customPreview ? <img src={customPreview} alt="Custom background preview" style={{ objectFit: customFit, objectPosition: customPosition }} /> : <Film size={28} />}
+                        <div className="custom-background-preview-dim" aria-hidden="true" style={{ opacity: customDim / 100 }} />
+                        <span>{customFileName || 'PNG, JPG, WEBP or GIF'}</span>
+                        {customActive && <b>ACTIVE</b>}
+                    </div>
+                    <div className="custom-background-content">
+                        <div className="ui-section-header">
+                            <div className="ui-section-header__icon"><Film size={16} /></div>
+                            <div className="ui-section-header__copy">
+                                <h3 className="ui-section-header__title">Custom Image / GIF</h3>
+                                <p className="ui-section-header__description">Use any local image or animated GIF. Custom media takes priority until removed.</p>
+                            </div>
+                        </div>
+                        <div className="custom-background-options">
+                            <label>Fit
+                                <select aria-label="Custom background fit" value={customFit} onChange={event => setCustomFit(event.target.value as 'cover' | 'contain')}><option value="cover">AUTO FILL</option><option value="contain">SHOW FULL IMAGE</option></select>
+                            </label>
+                            <label>Position
+                                <select aria-label="Custom background position" value={customPosition} onChange={event => setCustomPosition(event.target.value as CustomBackgroundSettings['position'])}>
+                                    <option value="center">CENTER</option><option value="top">TOP</option><option value="bottom">BOTTOM</option><option value="left">LEFT</option><option value="right">RIGHT</option>
+                                </select>
+                            </label>
+                            <label>Darken <span>{customDim}%</span>
+                                <input aria-label="Custom background darken" type="range" min="0" max="80" step="5" value={customDim} onChange={event => setCustomDim(Number(event.target.value))} />
+                            </label>
+                        </div>
+                        <div className="ui-inline-actions">
+                            <button type="button" className="ghost-btn" onClick={chooseCustomBackground} disabled={customLoading}><Upload size={14} /> Choose File</button>
+                            <button type="button" className="primary-btn" onClick={applyCustomBackground} disabled={customLoading || (!customSourcePath && !customActive)}>{customLoading ? 'APPLYING...' : 'APPLY CUSTOM'}</button>
+                            {customActive && <button type="button" className="ghost-btn" onClick={clearCustomBackground} disabled={customLoading} style={{ color: '#f87171' }}><Trash2 size={14} /> Remove</button>}
+                        </div>
+                    </div>
+                </div>
+            </div>}
+
+            {backgroundMode === 'riot' && <>
+            {/* 1. Direct Skin ID Card */}
+            <div className="card ui-panel" style={{ marginBottom: '12px', flexShrink: 0 }}>
+                <div className="ui-section-header">
+                    <div className="ui-section-header__icon">
+                        <Hash size={14} style={{ color: 'var(--hextech-gold)' }} />
+                    </div>
+                    <div className="ui-section-header__copy"><h3 className="ui-section-header__title">Profile Background</h3><p className="ui-section-header__description">Search directly or browse by champion.</p></div>
+                </div>
+                <div className="background-direct-row">
                     <div ref={searchRef} style={{ flex: 1, position: 'relative' }}>
                         <input
                             type="text"
@@ -349,14 +521,15 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                             onFocus={() => {
                                 if (skinSuggestions.length > 0) setShowSuggestions(true);
                             }}
-                            style={{ width: '100%', padding: '10px' }}
+                            style={{ width: '100%', padding: '10px 12px', fontSize: '0.82rem' }}
                         />
                         {showSuggestions && (
                             <div style={{
                                 position: 'absolute', top: '100%', left: 0, right: 0,
-                                background: '#1e1e2f', border: '1px solid #333',
-                                borderRadius: '8px', zIndex: 100, maxHeight: '300px',
+                                background: '#18181b', border: '1px solid var(--glass-border)',
+                                borderRadius: '8px', zIndex: 100, maxHeight: '240px',
                                 overflowY: 'auto', marginTop: '4px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
                             }}>
                                 {skinSuggestions.map(s => (
                                     <button
@@ -369,16 +542,16 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                                         style={{
                                             display: 'block', width: '100%', padding: '10px 12px',
                                             textAlign: 'left', background: 'none', border: 'none',
-                                            borderBottom: '1px solid #2a2a3e', cursor: 'pointer',
-                                            color: '#ddd', fontFamily: 'inherit', fontSize: '0.85rem',
+                                            borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
+                                            color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.82rem',
                                         }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = '#2a2a3e'}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                                     >
-                                        <span style={{ color: '#c8aa6e' }}>{s.championName}</span>
-                                        {' — '}{s.name}
-                                        <span style={{ color: '#666', marginLeft: '8px', fontSize: '0.75rem' }}>
-                                            ID: {s.id}
+                                        <span style={{ color: 'var(--hextech-gold)', fontWeight: 600 }}>{s.championName}</span>
+                                        <span style={{ color: 'var(--text-secondary)' }}>{' — '}{s.name}</span>
+                                        <span style={{ color: 'var(--text-secondary)', opacity: 0.5, marginLeft: '8px', fontSize: '0.7rem' }}>
+                                            #{s.id}
                                         </span>
                                     </button>
                                 ))}
@@ -396,29 +569,22 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                             }
                         }}
                         disabled={!lcu || loading || (!selectedDirectSkin && (!skinQuery.trim() || Number.isNaN(Number.parseInt(skinQuery, 10))))}
-                        style={{ padding: '10px 25px' }}
+                        style={{ padding: '10px 20px', fontSize: '0.75rem', borderRadius: '8px' }}
                     >
                         APPLY
                     </button>
                 </div>
-            </div>
-
-            {/* 2. Main Browser Card */}
-            <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                            <Image size={20} style={{ color: 'var(--hextech-gold)' }} />
-                            <h3 className="card-title" style={{ margin: 0 }}>Profile Background</h3>
-                        </div>
-                        <p className="music-subtitle" style={{ margin: 0 }}>Browse champions and select a skin.</p>
-                    </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '12px 0', paddingTop: '12px', borderTop: '1px solid var(--glass-border)' }}>
                     {lcu && currentBgId !== null && (
-                        <div className="bg-current-equipped">
-                            <div className="bg-current-equipped-info">
-                                <span className="bg-current-equipped-label">EQUIPPED BACKGROUND</span>
-                                <span className="bg-current-equipped-value">{currentBgId === 0 ? 'DEFAULT' : `ID ${currentBgId}`}</span>
-                            </div>
+                        <div style={{
+                            padding: '6px 12px', borderRadius: '8px',
+                            background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.15)',
+                            display: 'flex', alignItems: 'center', gap: '8px'
+                        }}>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipped</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--hextech-gold)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                                {currentBgId === 0 ? 'DEFAULT' : `#${currentBgId}`}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -429,21 +595,24 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                             <button type="button"
                                 className="ghost-btn"
                                 onClick={() => { setSelectedChampion(null); setSkins([]); setSelectedSkin(null); }}
+                                style={{ padding: '6px 12px', fontSize: '0.72rem' }}
                             >
                                 ← BACK
                             </button>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {selectedChampion.name} — select a skin
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                                {selectedChampion.name}
                             </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>— select a skin</span>
                         </div>
 
                         {loadingSkins && (
-                            <div style={{ textAlign: 'center', padding: '20px' }}>
-                                <Loader2 className="intel-spinner" size={24} style={{ color: 'var(--hextech-gold)' }} />
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <Loader2 className="intel-spinner" size={28} style={{ color: 'var(--hextech-gold)', marginBottom: '10px' }} />
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', margin: 0 }}>Loading skins...</p>
                             </div>
                         )}
 
-                        {skins.length > 0 && (
+                        {!loadingSkins && skins.length > 0 && (
                             <div ref={skinGridRef} className="bg-skin-grid">
                                 {skins.map(skin => (
                                     <button
@@ -476,16 +645,17 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                         <button type="button"
                             className="primary-btn"
                             id="apply-background-btn"
+                            ref={applySkinButtonRef}
                             onClick={() => selectedSkin && applyBackground(selectedSkin.id, selectedSkin.name)}
                             disabled={!lcu || loading || !selectedSkin}
-                            style={{ width: '100%', marginTop: '12px' }}
+                            style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '0.8rem' }}
                         >
                             {getApplyButtonLabel()}
                         </button>
                     </>
                 ) : (
-                    <>
-                        <div style={{ marginBottom: '12px', position: 'relative', width: '100%' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <div style={{ marginBottom: '12px', position: 'relative', width: '100%', flexShrink: 0 }}>
                             <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                             <input
                                 type="text"
@@ -493,19 +663,19 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                                 placeholder="Search by champion name..."
                                 value={champSearch}
                                 onChange={(e) => setChampSearch(e.target.value)}
-                                style={{ width: '100%', padding: '8px 10px 8px 35px', fontSize: '0.85rem' }}
+                                style={{ width: '100%', padding: '10px 12px 10px 35px', fontSize: '0.82rem' }}
                             />
                         </div>
 
                         {loadingChamps && (
-                            <div style={{ textAlign: 'center', padding: '30px' }}>
-                                <Loader2 className="intel-spinner" size={32} style={{ color: 'var(--hextech-gold)', marginBottom: '10px' }} />
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Loading champions...</p>
+                            <div style={{ textAlign: 'center', padding: '40px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                <Loader2 className="intel-spinner" size={28} style={{ color: 'var(--hextech-gold)', marginBottom: '10px' }} />
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', margin: 0 }}>Loading champions...</p>
                             </div>
                         )}
 
-                        {champsLoaded && (
-                            <div className="bg-champ-grid">
+                        {!loadingChamps && champsLoaded && (
+                            <div className="bg-champ-grid" style={{ flex: 1, minHeight: 0 }}>
                                 {filteredChampions.map(champ => (
                                     <button
                                         key={champ.id}
@@ -520,14 +690,15 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                                 ))}
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
+            </>}
 
-            {!lcu && (
-                <p style={{ color: '#ff3232', fontSize: '0.8rem', marginTop: '15px', textAlign: 'center' }}>
-                    ⚠ Start League of Legends to enable this feature.
-                </p>
+            {!lcu && backgroundMode === 'riot' && (
+                <div style={{ marginTop: '16px', padding: '14px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', textAlign: 'center' }}>
+                    <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>Start League of Legends to enable this feature.</span>
+                </div>
             )}
         </div>
     );

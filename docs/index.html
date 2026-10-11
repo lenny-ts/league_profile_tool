@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>League Profile Tool — Make Your Profile Yours</title>
+  <meta name="description" content="Customize your League of Legends profile with animated backgrounds, Overview cards, rank overrides, icons, challenges, and more. Free and open source." />
+  <meta name="theme-color" content="#09090b" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="icon.svg" alt="" width="24" height="24" />
+        <span>LPT</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#showcase">Showcase</a>
+        <a href="#media">Media</a>
+        <a href="https://discord.gg/G3M4X3B" target="_blank" rel="noopener">Discord</a>
+      </div>
+      <div class="nav-right">
+        <a href="https://github.com/lenny-ts/league_profile_tool" class="nav-ghost" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://ko-fi.com/profumato" class="nav-donate" target="_blank" rel="noopener">Ko-fi</a>
+        <a href="https://github.com/lenny-ts/league_profile_tool/releases" class="nav-cta" target="_blank" rel="noopener">Download</a>
+      </div>
+      <div class="nav-mobile" id="navMobile">
+        <a href="#features">Features</a>
+        <a href="#showcase">Showcase</a>
+        <a href="#media">Media</a>
+        <a href="https://discord.gg/G3M4X3B" target="_blank" rel="noopener">Discord</a>
+        <a href="https://github.com/lenny-ts/league_profile_tool" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://ko-fi.com/profumato" target="_blank" rel="noopener">Ko-fi</a>
+        <a href="https://github.com/lenny-ts/league_profile_tool/releases" target="_blank" rel="noopener" class="nav-cta">Download</a>
+      </div>
+      <button class="nav-burger" id="navBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+         v2.0.0 — Free &amp; Open Source
+      </div>
+      <h1>Your LoL Profile.<br/>Finally <span class="hl">Yours</span>.</h1>
+       <p class="hero-sub">Make the League Client yours. Choose an Atelier theme, animate your profile background, rebuild Overview cards, and let LPT install and launch Pengu Loader for you.</p>
+      <div class="hero-cta">
+        <a href="https://github.com/lenny-ts/league_profile_tool/releases" class="btn btn-big" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download for Windows
+        </a>
+        <a href="https://github.com/lenny-ts/league_profile_tool" class="btn btn-ghost" target="_blank" rel="noopener">
+          View Source
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M4 10l4-4m0 0H4.5m3.5 0V3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l2.1 4.3 4.7.7-3.4 3.3.8 4.7L8 11.8l-4.2 2.2.8-4.7L1.2 6l4.7-.7L8 1z" fill="#facc15"/></svg>
+          <span>MIT License</span>
+        </div>
+        <div class="proof-dot"></div>
+        <div class="proof-item">5 Languages</div>
+        <div class="proof-dot"></div>
+        <div class="proof-item">Tauri v2 + Rust</div>
+        <div class="proof-dot"></div>
+        <div class="proof-item">No Ads, No Tracking</div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-screenshot">
+        <img src="media/app.png" alt="League Profile Tool interface" />
+        <div class="screenshot-glow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROOF BAR ===== -->
+  <section class="proof-bar">
+    <div class="proof-bar-inner">
+      <div class="proof-stat">
+        <div class="proof-stat-num">100%</div>
+        <div class="proof-stat-label">Free Forever</div>
+      </div>
+      <div class="proof-stat">
+         <div class="proof-stat-num">v2.0</div>
+        <div class="proof-stat-label">Latest Release</div>
+      </div>
+      <div class="proof-stat">
+        <div class="proof-stat-num">6000+</div>
+        <div class="proof-stat-label">Icons Available</div>
+      </div>
+      <div class="proof-stat">
+        <div class="proof-stat-num">&lt;5MB</div>
+        <div class="proof-stat-label">Install Size</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES OVERVIEW ===== -->
+  <section class="features" id="features">
+    <div class="features-inner">
+      <div class="features-header">
+        <span class="label">Features</span>
+        <h2>Everything you need.<br/><span class="dim">Nothing you don't.</span></h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 15l4-4 3 3 4-4 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Custom Backgrounds</h3>
+          <p>Use any Riot splash, local image, or animated GIF. Auto-fit, position, and darken it without recompression.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 5h14v12H4z" stroke="currentColor" stroke-width="1.7"/><path d="M7 8h8M7 11h5M7 14h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Atelier Client Themes</h3>
+          <p>Start with Obsidian Atelier or Rosewater Atelier. One representative image, animated surfaces, themed profile sidebar, and direct one-click apply.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-gold">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 5h14v12H4zM7 8h3v6H7zM12 8h3v2h-3zM12 12h3v2h-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Overview Cards</h3>
+          <p>Override Honor, Mastery score, three champion slots, Clash Trophy, bracket, tier, banner, and level.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M6 16l5-12 5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 13h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Rank Override</h3>
+          <p>Control rank, division, LP, previous season tier, banner, and border across five ranked queues.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2l6 4v7l-6 7-6-7V6l6-4z" stroke="currentColor" stroke-width="2"/><path d="M8 11h6M11 8v6" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <h3>Challenge Level</h3>
+          <p>Choose any challenge crystal tier and points total, with live preview and client sync.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M11 7v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Icon Swapper</h3>
+          <p>Browse 6000+ profile icons by name or ID and synchronize profile and chat visibility.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-gold">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2l2.5 5.5L19 8l-4 4 1 5.5L11 15l-5 2.5 1-5.5-4-4 5.5-.5L11 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Tokens &amp; Regalia</h3>
+          <p>Customize three challenge tokens, summoner title, profile banner accent, and crest border.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 6h14M4 11h10M4 16h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Bio &amp; Music Sync</h3>
+          <p>Write a persistent bio or update it automatically from Last.fm with your own template and idle text.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="14" r="4" stroke="currentColor" stroke-width="2"/></svg>
+          </div>
+          <h3>Profile Presets</h3>
+          <p>Save and load entire profile setups. Bio, icon, background, tokens — all at once.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-gold">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><circle cx="15" cy="9" r="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3 18c.5-3 2.2-4.5 5-4.5s4.5 1.5 5 4.5M13 14c3.2 0 5 1.3 5.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Social &amp; Utilities</h3>
+          <p>Bulk-manage friends, invite a lobby, inspect system logs, back up settings, and restore profiles automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SHOWCASE: ALL FEATURES ===== -->
+  <section class="showcase" id="showcase">
+
+    <!-- 1. BIO -->
+    <div class="show-row reverse showcase-bio">
+      <div class="show-text">
+        <span class="label">Profile Bio &amp; Status</span>
+        <h2>Your words.<br/>Your vibe.</h2>
+        <p>Write a persistent bio, use your Music Sync idle text, and set your chat availability in the same place. Enforce Offline keeps your status hidden during Champ Select.</p>
+        <ul class="show-list">
+          <li>Live character count and auto-expanding editor</li>
+          <li>Online, Away, Mobile, or Offline status</li>
+          <li>Enforce Offline during Champ Select</li>
+          <li>Music Sync idle text as bio toggle</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/bio.jpg" aria-label="Video demo: Profile Bio and Status"><source src="media/bio.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- BACKGROUND -->
+    <div class="show-row showcase-background" id="background">
+      <div class="show-text">
+        <span class="label">Profile Background</span>
+        <h2>Any image.<br/>Even animated.</h2>
+        <p>Browse every Riot skin or load your own PNG, JPG, WEBP, or animated GIF. Auto Fill adapts any resolution without stretching or recompressing the original file.</p>
+        <ul class="show-list">
+          <li>Local images and animated GIFs up to 50 MB</li>
+          <li>Automatic proportional fill or full-image mode</li>
+          <li>Position and darkening controls</li>
+          <li>Riot skin browser and direct Skin ID search</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/background.jpg" aria-label="Video demo: Profile Background"><source src="media/background.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- CLIENT THEMES -->
+    <div class="show-row reverse showcase-themes" id="themes">
+      <div class="show-text">
+        <span class="label">Client Themes</span>
+        <h2>One image.<br/>A whole atmosphere.</h2>
+        <p>Choose an Atelier preset and apply it directly from the card. Obsidian Atelier is neutral and architectural; Rosewater Atelier is soft, editorial, and feminine. Both animate the client background, profile area, and friend list without covering the Profile Overview.</p>
+        <ul class="show-list">
+          <li>Obsidian Atelier and Rosewater Atelier</li>
+          <li>One representative splash per theme</li>
+          <li>Animated background drift and sidebar motion</li>
+          <li>Edit CSS or apply instantly from the preset card</li>
+        </ul>
+      </div>
+      <div class="show-visual theme-showcase-visual">
+        <div class="theme-demo-window">
+          <div class="theme-demo-bar"><span class="theme-demo-dot"></span><span>CLIENT THEMES / LIVE PREVIEW</span><span class="theme-demo-status">APPLIED</span></div>
+          <video class="show-video" controls muted loop playsinline preload="none" poster="media/theme.jpg" aria-label="Video demo: Atelier Client Themes"><source src="media/theme.mp4" type="video/mp4" />Your browser does not support video.</video>
+          <div class="theme-demo-caption"><strong>Obsidian Atelier</strong><span>One image. A whole atmosphere.</span><div class="theme-demo-swatches"><i></i><i></i><i></i><i></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGED PENGU -->
+    <div class="show-row showcase-pengu-managed">
+      <div class="show-text">
+        <span class="label">Managed Pengu Loader</span>
+        <h2>No manual loader<br/>setup.</h2>
+        <p>LPT downloads the official Pengu Loader runtime, installs the LPT plugins, requests the required Windows permission, and starts Pengu automatically when needed.</p>
+        <ul class="show-list">
+          <li>Official MIT-licensed runtime download</li>
+          <li>Automatic plugin install and updates</li>
+          <li>UAC-aware automatic launch</li>
+          <li>Persistent local runtime under AppData</li>
+        </ul>
+      </div>
+      <div class="show-visual pengu-showcase-visual">
+        <div class="pengu-official-card">
+          <img src="https://pengu.lol/banner.jpg" alt="Pengu Loader official penguin banner" loading="lazy" />
+          <div class="pengu-official-caption"><img class="pengu-official-mark" src="https://pengu.lol/icon.png" alt="" /><span><strong>Pengu Loader</strong><small>The runtime behind LPT themes and plugins.</small></span><a href="https://pengu.lol" target="_blank" rel="noopener">Official site ↗</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW CARDS -->
+    <div class="show-row reverse showcase-overview" id="overview">
+      <div class="show-text">
+        <span class="label">Overview Cards</span>
+        <h2>Rebuild your<br/>profile overview.</h2>
+        <p>Customize the cards visitors see on your profile. Control Honor and Mastery data, choose all three featured champions, and redesign both Clash modules independently.</p>
+        <ul class="show-list">
+          <li>Honor level and total Mastery score</li>
+          <li>Three independent champions and Mastery levels</li>
+          <li>Clash Trophy theme, bracket, and tier</li>
+          <li>Clash Banner region and level</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/overview.jpg" aria-label="Video demo: Overview Cards"><source src="media/overview.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 5. ICONS -->
+    <div class="show-row reverse showcase-icons">
+      <div class="show-text">
+        <span class="label">Icon Swapper</span>
+        <h2>6000+ icons.<br/>One click.</h2>
+        <p>Browse and search over 6000 profile icons from CommunityDragon. Each icon is applied via two API calls for chat and profile visibility. Icons you don't own show in chat only.</p>
+        <ul class="show-list">
+          <li>6000+ icons with names and IDs</li>
+          <li>Search by name or numeric ID</li>
+          <li>Dual-apply: profile + chat sync</li>
+          <li>Unowned icons show in chat only</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/icon.jpg" aria-label="Video demo: Icon Swapper"><source src="media/icon.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 6. FRIENDS -->
+    <div class="show-row showcase-friends">
+      <div class="show-text">
+        <span class="label">Friend List Manager</span>
+        <h2>Clean house.<br/>Bulk delete.</h2>
+        <p>View, search, and bulk-delete friends. Shows Riot ID, availability status, and group for each. Confirmation dialog before permanent deletion.</p>
+        <ul class="show-list">
+          <li>Search by name or group</li>
+          <li>Select All Visible / Deselect Visible</li>
+          <li>Real-time progress bar during deletion</li>
+          <li>Permanent action — friends not notified</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/friends.jpg" aria-label="Video demo: Friend List Manager"><source src="media/friends.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 7. TOKENS -->
+    <div class="show-row showcase-tokens">
+      <div class="show-text">
+        <span class="label">Profile Tokens</span>
+        <h2>Your medals.<br/>Your flex.</h2>
+        <p>Assign up to 3 challenge tokens to your profile. Browse all unlocked tokens, filter by tier. Also set your Summoner Title, Profile Banner Accent, and Crest Border.</p>
+        <ul class="show-list">
+          <li>3 token slots with visual preview</li>
+          <li>Filter by name and tier (Iron–Challenger)</li>
+          <li>Summoner Title from challenges API</li>
+          <li>Profile Banner &amp; Crest Border (regalia)</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/tokens.jpg" aria-label="Video demo: Profile Tokens"><source src="media/tokens.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 8. PRESETS -->
+    <div class="show-row reverse showcase-presets">
+      <div class="show-text">
+        <span class="label">Profile Presets</span>
+        <h2>Save everything.<br/>Load instantly.</h2>
+        <p>Save your entire profile — bio, availability, icon, background, tokens, and title — as a named preset. Stored on disk. Load any preset to restore everything in one click.</p>
+        <ul class="show-list">
+          <li>Saves bio, icon, background, tokens, title</li>
+          <li>Stored on disk (Tauri AppData)</li>
+          <li>Visual preview cards per preset</li>
+          <li>Multiple presets, delete support</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <div class="visual-placeholder">
+          <img class="show-screenshot" src="media/presets.png" alt="Profile Presets: a saved preset card with icon, availability and preview" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. MUSIC -->
+    <div class="show-row showcase-music">
+      <div class="show-text">
+        <span class="label">Music Auto Bio</span>
+        <h2>Now playing.<br/>Auto-updated.</h2>
+        <p>Connect your Last.fm account and your League bio updates automatically with what you're listening to. Custom bio template with placeholders for title, artist, album, and source.</p>
+        <ul class="show-list">
+          <li>Last.fm username + API key setup</li>
+          <li>Bio template: {title}, {artist}, {album}, {source}</li>
+          <li>Idle text fallback when nothing plays</li>
+          <li>Sync interval: 5–120 seconds</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/music.jpg" aria-label="Video demo: Music Auto Bio"><source src="media/music.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 10. RANK OVERRIDE -->
+    <div class="show-row showcase-rank">
+      <div class="show-text">
+        <span class="label">Rank Override</span>
+        <h2>Any rank.<br/>Your choice.</h2>
+        <p>Override the rank shown in chat, social cards, and Profile Overview. Control five queues, ten tiers, divisions, League Points, previous season rank, banner, and crest border.</p>
+        <ul class="show-list">
+          <li>Solo/Duo, Flex 5v5, 5v5, TFT, and Double Up</li>
+          <li>Iron through Challenger + divisions I–IV</li>
+          <li>League Points and previous season rank</li>
+          <li>Independent profile banner and crest border</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/rank.jpg" aria-label="Video demo: Rank Override"><source src="media/rank.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- CHALLENGE LEVEL -->
+    <div class="show-row showcase-challenge">
+      <div class="show-text">
+        <span class="label">Challenge Level</span>
+        <h2>Crystal tier.<br/>Your score.</h2>
+        <p>Set the challenge crystal tier (NONE through CHALLENGER) and the challenge points number shown on your profile. Sync from client or set manually.</p>
+        <ul class="show-list">
+          <li>11 tiers: NONE through CHALLENGER</li>
+          <li>Custom challenge points number</li>
+          <li>Tier-colored crystal preview</li>
+          <li>Sync from Client reads current values</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/challenges.jpg" aria-label="Video demo: Challenge Level"><source src="media/challenges.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 13. LOBBY MANAGER -->
+    <div class="show-row reverse showcase-lobby">
+      <div class="show-text">
+        <span class="label">Lobby Manager</span>
+        <h2>Quick invite.<br/>No scrolling.</h2>
+        <p>Invite Online and Do Not Disturb friends to a lobby. Auto-creates a Normal 5v5 lobby if you're not in one. Select All or pick individually.</p>
+        <ul class="show-list">
+          <li>Filters Online + DND friends</li>
+          <li>Auto-creates Normal 5v5 lobby</li>
+          <li>Select All Available</li>
+          <li>Invite Selected or Invite All</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/lobby.jpg" aria-label="Video demo: Lobby Manager"><source src="media/lobby.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- 14. SYSTEM LOG -->
+    <div class="show-row showcase-logs">
+      <div class="show-text">
+        <span class="label">System Log</span>
+        <h2>See everything.<br/>Debug anything.</h2>
+        <p>Live log stream of all LCU bridge communications. Auto-classified as Error, Success, or System Info. Expandable JSON payload viewer with syntax highlighting.</p>
+        <ul class="show-list">
+          <li>Error / Success / System Info counts</li>
+          <li>Search, sort, auto-scroll toggle</li>
+          <li>Expandable JSON payload viewer</li>
+          <li>Copy, Export, and Clear actions</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <div class="visual-placeholder">
+          <img class="show-screenshot" src="media/logs.png" alt="System Logs: counters, search, filters and recent activity" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. SETTINGS -->
+    <div class="show-row reverse showcase-settings">
+      <div class="show-text">
+        <span class="label">Settings</span>
+        <h2>Set it.<br/>Forget it.</h2>
+        <p>Auto-launch on boot, minimize to tray, auto-restore profile when League opens. Backup and restore settings as JSON. PenguLoader plugin management.</p>
+        <ul class="show-list">
+          <li>Auto-launch &amp; minimize to tray</li>
+          <li>Auto-restore profile on client connect</li>
+          <li>Export / Import settings (JSON)</li>
+          <li>Clear saved data with granular checkboxes</li>
+        </ul>
+      </div>
+      <div class="show-visual">
+        <div class="visual-placeholder">
+          <img class="show-screenshot" src="media/settings.png" alt="Settings: Auto-Restore Profile, Backup and Restore, and Pengu Loader Integration" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===== MEDIA ===== -->
+  <section class="media-kit" id="media">
+    <div class="media-kit-inner">
+      <span class="label">Watch It In Action</span>
+      <h2>Short clips.<br/><span class="dim">Clear proof.</span></h2>
+      <p class="media-kit-intro">Real recordings of the tool. Press Play to watch a demo; use the video controls to pause or replay.</p>
+      <div class="media-kit-grid">
+        <a class="media-kit-card" href="#themes"><span class="media-duration">THEMES</span><h3>Atelier in action</h3><p>See the theme picker and the client appearance.</p><span class="media-kit-link">Watch demo →</span></a>
+        <a class="media-kit-card" href="#background"><span class="media-duration">BACKGROUND</span><h3>Choose a new background</h3><p>Browse skins and update the profile background.</p><span class="media-kit-link">Watch demo →</span></a>
+        <a class="media-kit-card" href="#overview"><span class="media-duration">OVERVIEW</span><h3>Profile overview</h3><p>See rank, mastery and regalia on the client profile.</p><span class="media-kit-link">Watch demo →</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="how" id="how">
+    <div class="how-inner">
+      <span class="label">How it Works</span>
+      <h2>Three steps. <span class="hl">That's it.</span></h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="step-num">01</div>
+          <h3>Download</h3>
+          <p>Grab the installer. 30 seconds. No account needed.</p>
+        </div>
+        <div class="how-step-arrow" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="how-step">
+          <div class="step-num">02</div>
+          <h3>Open League</h3>
+          <p>Start the tool while League is running. LPT connects and launches managed Pengu when needed.</p>
+        </div>
+        <div class="how-step-arrow" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="how-step">
+          <div class="step-num">03</div>
+          <h3>Customize</h3>
+          <p>Edit your profile. Hit save. Done.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta">
+    <div class="cta-inner">
+      <h2>Make your profile <span class="hl">unforgettable</span>.</h2>
+      <p>Free. Open source. No strings attached.</p>
+      <div class="cta-actions">
+        <a href="https://github.com/lenny-ts/league_profile_tool/releases" class="btn btn-big" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+           Download v2.0.0
+        </a>
+        <a href="https://github.com/lenny-ts/league_profile_tool" class="btn btn-ghost" target="_blank" rel="noopener">
+          GitHub
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M4 10l4-4m0 0H4.5m3.5 0V3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="https://ko-fi.com/profumato" class="btn btn-donate-sm" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 28s-11-7.2-11-15.5C5 8.5 8.1 5 12 5c2.2 0 3.5 1.2 4 2.5C16.5 6.2 17.8 5 20 5c3.9 0 7 3.5 7 7.5C27 20.8 16 28 16 28z" fill="currentColor"/></svg>
+          Ko-fi
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-brand">League Profile Tool</span>
+        <span class="footer-sep">&middot;</span>
+        <span>Made by <a href="https://github.com/lenny-ts" target="_blank" rel="noopener">lenny-ts</a></span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/lenny-ts/league_profile_tool" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://discord.gg/G3M4X3B" target="_blank" rel="noopener">Discord</a>
+        <a href="https://ko-fi.com/profumato" target="_blank" rel="noopener">Ko-fi</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

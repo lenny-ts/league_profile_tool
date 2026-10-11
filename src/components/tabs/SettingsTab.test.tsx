@@ -5,6 +5,8 @@ import SettingsTab from './SettingsTab';
 const mockInvoke = vi.fn();
 const mockOpen = vi.fn();
 const mockSave = vi.fn();
+const mockSetSize = vi.fn().mockResolvedValue(undefined);
+const mockCenter = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@tauri-apps/plugin-autostart', () => ({
     enable: vi.fn(),
@@ -18,6 +20,22 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
+vi.mock('@tauri-apps/api/window', () => ({
+    LogicalSize: class LogicalSize {
+        width: number;
+        height: number;
+        constructor(width: number, height: number) {
+            this.width = width;
+            this.height = height;
+        }
+    },
+    currentMonitor: vi.fn().mockResolvedValue(null),
+    getCurrentWindow: vi.fn().mockReturnValue({
+        setSize: (...args: unknown[]) => mockSetSize(...args),
+        center: (...args: unknown[]) => mockCenter(...args),
+    }),
 }));
 
 describe('SettingsTab', () => {
@@ -36,6 +54,25 @@ describe('SettingsTab', () => {
         expect(screen.getByText('Technical Settings')).toBeDefined();
         expect(screen.getByText('Auto-launch')).toBeDefined();
         expect(screen.getByText('Minimize to Tray')).toBeDefined();
+        expect(screen.getByLabelText('Default Window Size')).toHaveValue('recommended');
+        expect(screen.queryByText('Bridge Interface')).toBeNull();
+        expect(screen.getByLabelText('Default Window Size').closest('.settings-row')).toHaveClass('settings-window-size-row');
+        expect(screen.getByText('Export').parentElement).toHaveClass('settings-backup-actions');
+    });
+
+    it('should apply and persist the selected default window size', async () => {
+        localStorage.clear();
+        mockSetSize.mockClear();
+        mockCenter.mockClear();
+        render(<SettingsTab {...mockProps} showToast={vi.fn()} />);
+
+        fireEvent.change(screen.getByLabelText('Default Window Size'), { target: { value: 'compact' } });
+
+        await waitFor(() => {
+            expect(mockSetSize).toHaveBeenCalledWith(expect.objectContaining({ width: 1000, height: 700 }));
+            expect(mockCenter).toHaveBeenCalled();
+            expect(localStorage.getItem('window_size_preset_v1')).toBe('compact');
+        });
     });
 
     it('should have accessible labels for switches', () => {
@@ -102,7 +139,7 @@ describe('SettingsTab', () => {
         fireEvent.click(screen.getByText('Clear Saved Data'));
         expect(screen.getByText('Rank overrides')).toBeDefined();
         expect(screen.getByText('Challenge overrides')).toBeDefined();
-        expect(screen.getByText('Background skin')).toBeDefined();
+        expect(screen.getByText('Background skin & custom')).toBeDefined();
         expect(screen.getByText('Tokens, Title, Banner & Crest')).toBeDefined();
         expect(screen.getByText('Profile icon')).toBeDefined();
         expect(screen.getByText('Status & Bio')).toBeDefined();
@@ -125,6 +162,44 @@ describe('SettingsTab', () => {
         expect(localStorage.getItem('profile_auto_enforce_v1')).toBeNull();
         await waitFor(() => {
             expect(lcuReq).toHaveBeenCalledWith('GET', '/lol-chat/v1/me');
+        });
+    });
+
+    it('should clear the Pengu rank and overview override when rank is cleared', async () => {
+        localStorage.setItem('pengu_overview_override_v1', 'true');
+        localStorage.setItem('profile_saved_custom_background_v1', '{"active":true}');
+        render(<SettingsTab {...mockProps} showToast={vi.fn()} />);
+        fireEvent.click(screen.getByText('Clear Saved Data'));
+        expect(screen.getByText('Overview Cards')).toBeDefined();
+        fireEvent.click(screen.getByText('Clear Selected'));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('pengu_overview_override_v1')).toBeNull();
+            expect(localStorage.getItem('profile_saved_custom_background_v1')).toBeNull();
+            expect(mockInvoke).toHaveBeenCalledWith('clear_custom_background');
+            expect(mockInvoke).toHaveBeenCalledWith('save_rank_config', {
+                tier: 'NONE',
+                division: 'I',
+                queue: 'RANKED_SOLO_5x5',
+                leaguePoints: 0,
+                lastSeasonTier: 'UNRANKED',
+                borderTier: 'AUTO',
+                bannerTier: 'AUTO',
+                honorLevel: 'AUTO',
+                masteryScore: '',
+                masteryLevel: 'AUTO',
+                masteryLevel2: 'AUTO',
+                masteryLevel3: 'AUTO',
+                masteryChampionId: 'AUTO',
+                masteryChampionId2: 'AUTO',
+                masteryChampionId3: 'AUTO',
+                trophyTheme: 'AUTO',
+                trophyBracket: 4,
+                trophyTier: 4,
+                clashBannerTheme: 'AUTO',
+                clashBannerLevel: 1,
+                overviewEnabled: false,
+            });
         });
     });
 
@@ -239,16 +314,16 @@ describe('SettingsTab', () => {
 
         it('should show install button with correct label when not installed', () => {
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Install Plugin')).toBeDefined();
-            expect(screen.queryByText('Reinstall Plugin')).toBeNull();
+            expect(screen.getByText('Install Pengu & Plugins')).toBeDefined();
+            expect(screen.queryByText('Update Plugins')).toBeNull();
             expect(screen.queryByText('✓ Plugin installed')).toBeNull();
         });
 
         it('should show reinstall button and status when plugin is installed', () => {
             localStorage.setItem('pengu_plugin_installed_v1', 'true');
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Reinstall Plugin')).toBeDefined();
-            expect(screen.queryByText('Install Plugin')).toBeNull();
+            expect(screen.getByText('Update Plugins')).toBeDefined();
+            expect(screen.queryByText('Install Pengu & Plugins')).toBeNull();
             expect(screen.getByText('✓ Plugin installed')).toBeDefined();
         });
 
@@ -257,7 +332,7 @@ describe('SettingsTab', () => {
             const showToast = vi.fn();
             render(<SettingsTab {...mockProps} showToast={showToast} />);
 
-            fireEvent.click(screen.getByText('Install Plugin'));
+            fireEvent.click(screen.getByText('Install Pengu & Plugins'));
             await waitFor(() => {
                 expect(mockInvoke).toHaveBeenCalledWith('install_pengu_plugin');
                 expect(showToast).toHaveBeenCalledWith('Plugin installed! Restart League Client.', 'success');
@@ -270,7 +345,7 @@ describe('SettingsTab', () => {
             const showToast = vi.fn();
             render(<SettingsTab {...mockProps} showToast={showToast} />);
 
-            fireEvent.click(screen.getByText('Install Plugin'));
+            fireEvent.click(screen.getByText('Install Pengu & Plugins'));
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Install failed: Error: Pengu Loader not found', 'error');
             });
@@ -298,18 +373,16 @@ describe('SettingsTab', () => {
             });
         });
 
-        it('should show manual installation instructions', () => {
+        it('should show automatic installation instructions', () => {
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Manual Installation:')).toBeDefined();
-            expect(screen.getByText(/Copy the complete/)).toBeDefined();
-            expect(screen.getByText(/Pengu Loader\\plugins\\rank-override/)).toBeDefined();
+            expect(screen.getByText('Automatic setup:')).toBeDefined();
+            expect(screen.getByText(/official runtime and LPT plugins/)).toBeDefined();
+            expect(screen.getByText(/League Profile Tool\\Pengu Loader/)).toBeDefined();
         });
 
-        it('should show download link', () => {
+        it('should not require an external download link', () => {
             render(<SettingsTab {...mockProps} />);
-            const link = screen.getByText('Download Pengu Loader').closest('a');
-            expect(link).toHaveAttribute('href', 'https://github.com/PenguLoader/PenguLoader/releases');
-            expect(link).toHaveAttribute('target', '_blank');
+            expect(screen.queryByText('Download Pengu Loader')).toBeNull();
         });
     });
 

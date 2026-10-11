@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="108" fill="#09090b"/>
+
+  <!-- Shield shape -->
+  <path d="M256 60 L400 120 L400 280 C400 370 256 452 256 452 C256 452 112 370 112 280 L112 120 Z"
+        fill="none" stroke="url(#a)" stroke-width="20" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- Shield inner glow -->
+  <path d="M256 80 L385 135 L385 278 C385 355 256 430 256 430 C256 430 127 355 127 278 L127 135 Z"
+        fill="url(#a)" opacity="0.06"/>
+
+  <!-- Profile head -->
+  <circle cx="256" cy="205" r="52" fill="url(#a)"/>
+
+  <!-- Profile body -->
+  <path d="M165 340 C165 275 200 248 256 248 C312 248 347 275 347 340"
+        fill="url(#a)"/>
+
+  <!-- Decorative crown/notch -->
+  <path d="M210 145 L230 120 L256 140 L282 120 L302 145"
+        fill="none" stroke="url(#a)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+
+  <!-- Side accents -->
+  <circle cx="168" cy="220" r="6" fill="#60a5fa" opacity="0.4"/>
+  <circle cx="344" cy="220" r="6" fill="#818cf8" opacity="0.4"/>
+
+  <!-- Bottom accent line -->
+  <line x1="180" y1="380" x2="332" y2="380" stroke="url(#a)" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+</svg>
