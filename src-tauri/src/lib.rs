@@ -252,31 +252,45 @@ fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(trimmed).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-async fn install_pengu_plugin(app: tauri::AppHandle) -> Result<String, String> {
-    let loader_root = pengu::ensure_loader(&app).await?;
-    let plugins_dir = loader_root.join("plugins");
-    // Try common Pengu Loader installation paths
+async fn write_pengu_plugins(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let plugins_dir = pengu::plugins_dir(app)?;
     // v1.1.6 doesn't support @author/ folders, use simple folder name
     let target_dir = plugins_dir.join("rank-override");
-    
-    // Create target directory
-    fs::create_dir_all(&target_dir).map_err(|e| format!("Failed to create plugin directory: {}", e))?;
-    fs::create_dir_all(target_dir.join("modules")).map_err(|e| format!("Failed to create modules directory: {}", e))?;
-    
-    // Write plugin files (embedded in binary)
+    fs::create_dir_all(target_dir.join("modules")).map_err(|e| format!("Failed to create plugin directory: {}", e))?;
     fs::write(
         target_dir.join("index.js"),
         include_str!("../../pengu-plugin/rank-override/index.js")
     ).map_err(|e| format!("Failed to write index.js: {}", e))?;
-    
     fs::write(
         target_dir.join("modules").join("rankOverride.js"),
         include_str!("../../pengu-plugin/rank-override/modules/rankOverride.js")
     ).map_err(|e| format!("Failed to write rankOverride.js: {}", e))?;
-    
+    themes::install_client_theme_plugin(app).await?;
+    Ok(target_dir)
+}
+
+#[tauri::command]
+async fn install_pengu_plugin(app: tauri::AppHandle) -> Result<String, String> {
+    let loader_root = pengu::ensure_loader(&app).await?;
+    let target_dir = write_pengu_plugins(&app).await?;
     pengu::ensure_running(&loader_root)?;
     Ok(format!("Plugin installed and Pengu Loader started: {}", target_dir.display()))
+}
+
+/// First-run bootstrap: downloads Pengu Loader and both plugins, then starts it.
+/// Returns true when a fresh install happened, false when everything was already in place.
+#[tauri::command]
+async fn setup_pengu(app: tauri::AppHandle) -> Result<bool, String> {
+    let plugins_dir = pengu::plugins_dir(&app)?;
+    let ready = plugins_dir.join("rank-override").join("index.js").is_file()
+        && plugins_dir.join("client-theme").join("index.js").is_file();
+    if ready {
+        return Ok(false);
+    }
+    let loader_root = pengu::ensure_loader(&app).await?;
+    write_pengu_plugins(&app).await?;
+    pengu::ensure_running(&loader_root)?;
+    Ok(true)
 }
 
 #[tauri::command]
@@ -572,7 +586,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, ensure_pengu_running, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
+        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, setup_pengu, ensure_pengu_running, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_, _| {});

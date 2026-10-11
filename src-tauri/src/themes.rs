@@ -110,17 +110,25 @@ fn write_config(dir: &Path, config: &Value) -> Result<(), String> {
     fs::rename(temporary, dir.join("theme.json")).map_err(|e| e.to_string())
 }
 
+/// Ensures Pengu exists and (re)writes the client-theme plugin file.
+/// Returns the plugin directory.
+pub async fn install_client_theme_plugin(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = pengu::ensure_loader(app).await?.join("plugins/client-theme");
+    let _guard = WRITE_LOCK.lock().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    fs::write(dir.join("index.js"), include_str!("../../pengu-plugin/client-theme/index.js"))
+        .map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
 #[tauri::command]
 pub async fn save_client_theme(app: tauri::AppHandle, name: String, css: String, enabled: bool) -> Result<String, String> {
     validate_css(&css)?;
     if name.trim().is_empty() || name.chars().count() > 80 {
         return Err("Theme name must contain 1–80 characters".into());
     }
-    let dir = pengu::ensure_loader(&app).await?.join("plugins/client-theme");
+    let dir = install_client_theme_plugin(&app).await?;
     let _guard = WRITE_LOCK.lock().map_err(|e| e.to_string())?;
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    fs::write(dir.join("index.js"), include_str!("../../pengu-plugin/client-theme/index.js"))
-        .map_err(|e| e.to_string())?;
     write_config(&dir, &json!({"name": name.trim(), "css": css, "enabled": enabled}))?;
     Ok(format!("Theme saved to {}", dir.display()))
 }

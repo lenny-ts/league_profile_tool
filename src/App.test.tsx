@@ -18,6 +18,12 @@ vi.mock('@tauri-apps/api/app', () => ({
     getVersion: vi.fn().mockResolvedValue('1.3.7'),
 }));
 
+vi.mock('@tauri-apps/plugin-autostart', () => ({
+    isEnabled: vi.fn().mockResolvedValue(false),
+    enable: vi.fn().mockResolvedValue(undefined),
+    disable: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@tauri-apps/api/window', () => ({
     LogicalSize: class LogicalSize {
         width: number;
@@ -110,6 +116,16 @@ describe('App Component', () => {
         fireEvent.click(toggleBtn);
 
         expect(screen.getByTitle(/Expand Menu/i)).toBeDefined();
+    });
+
+    it('should set up Pengu Loader automatically on startup', async () => {
+        render(<App />);
+        expect(await screen.findByText('Home')).toBeDefined();
+
+        await waitFor(() => {
+            expect(core.invoke).toHaveBeenCalledWith('setup_pengu');
+        });
+        expect(core.invoke).toHaveBeenCalledWith('ensure_pengu_running');
     });
 
     it('should handle init failure gracefully', async () => {

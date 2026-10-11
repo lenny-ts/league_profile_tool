@@ -112,7 +112,12 @@ function App() {
         setIsAutostartEnabled(autostart);
         setMinimizeToTray(tray);
 
-        invoke<boolean>("ensure_pengu_running")
+        invoke<boolean>("setup_pengu")
+          .then((installed) => {
+            if (installed) addLog("Pengu Loader and plugins installed automatically.");
+          })
+          .catch(() => { })
+          .then(() => invoke<boolean>("ensure_pengu_running"))
           .then((started) => {
             if (started) addLog("Pengu Loader started automatically.");
           })
