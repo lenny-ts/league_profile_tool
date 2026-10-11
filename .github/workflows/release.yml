@@ -149,7 +149,8 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
 
       - name: Remove Windows signing material
         if: always() && matrix.platform == 'windows-latest'
