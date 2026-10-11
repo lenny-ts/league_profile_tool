@@ -139,12 +139,14 @@ jobs:
 
       - name: Normalize the updater signing key
         shell: bash
+        env:
+          RAW_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           # Private keys stored as GitHub secrets usually keep a literal "\n"
           # instead of real newlines. tauri-action copes with that, the tauri CLI
           # reports it as a wrong password, so fix it once here.
-          KEY=$(printf '%b' "$TAURI_SIGNING_PRIVATE_KEY")
+          KEY=$(printf '%b' "$RAW_KEY")
           {
             echo "TAURI_SIGNING_PRIVATE_KEY<<TAURI_KEY_EOF"
             printf '%s\n' "$KEY"
