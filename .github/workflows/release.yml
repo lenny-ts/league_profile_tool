@@ -137,6 +137,20 @@ jobs:
           }
           $tauriConfig | ConvertTo-Json -Depth 5 | Set-Content -Path 'src-tauri/tauri.windows.conf.json'
 
+      - name: Normalize the updater signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Private keys stored as GitHub secrets usually keep a literal "\n"
+          # instead of real newlines. tauri-action copes with that, the tauri CLI
+          # reports it as a wrong password, so fix it once here.
+          KEY=$(printf '%b' "$TAURI_SIGNING_PRIVATE_KEY")
+          {
+            echo "TAURI_SIGNING_PRIVATE_KEY<<TAURI_KEY_EOF"
+            printf '%s\n' "$KEY"
+            echo "TAURI_KEY_EOF"
+          } >> "$GITHUB_ENV"
+
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
