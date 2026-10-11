@@ -406,6 +406,10 @@ fn clear_custom_background(app: tauri::AppHandle) -> Result<String, String> {
     Ok("Custom background cleared".to_string())
 }
 
+// The frontend sends these fields flat; Tauri deserializes each command argument
+// by key, so the payload shape must stay stable. Grouping these into a struct
+// would change the IPC contract, so clippy is silenced for this command only.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 fn save_rank_config(
     app: tauri::AppHandle,

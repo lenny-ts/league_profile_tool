@@ -61,46 +61,57 @@ pub fn ensure_running(loader_root: &std::path::Path) -> Result<(), String> {
     if !executable.is_file() {
         return Err("Pengu Loader is not installed yet".into());
     }
-
-    #[cfg(target_os = "windows")]
-    {
-        let running = Command::new("tasklist")
-            .args(["/FI", "IMAGENAME eq Pengu Loader.exe", "/NH"])
-            .output()
-            .map(|output| String::from_utf8_lossy(&output.stdout).contains("Pengu Loader.exe"))
-            .unwrap_or(false);
-        if running {
-            return Ok(());
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::ffi::OsStrExt;
-        use windows::core::PCWSTR;
-        use windows::Win32::UI::Shell::ShellExecuteW;
-        use windows::Win32::UI::WindowsAndMessaging::SHOW_WINDOW_CMD;
-
-        let file: Vec<u16> = executable.as_os_str().encode_wide().chain(Some(0)).collect();
-        let verb: Vec<u16> = "runas".encode_utf16().chain(Some(0)).collect();
-        let result = unsafe {
-            ShellExecuteW(
-                None,
-                PCWSTR(verb.as_ptr()),
-                PCWSTR(file.as_ptr()),
-                PCWSTR::null(),
-                PCWSTR::null(),
-                SHOW_WINDOW_CMD(1),
-            )
-        };
-        if result.0 as usize <= 32 {
-            return Err("Pengu Loader requires administrator approval. Start was cancelled or failed.".into());
-        }
+    if loader_is_running() {
         return Ok(());
     }
+    launch_loader(&executable)
+}
 
-    #[cfg(not(target_os = "windows"))]
-    Command::new(executable).spawn().map(|_| ()).map_err(|e| format!("Failed to start Pengu Loader: {}", e))
+#[cfg(target_os = "windows")]
+fn loader_is_running() -> bool {
+    Command::new("tasklist")
+        .args(["/FI", "IMAGENAME eq Pengu Loader.exe", "/NH"])
+        .output()
+        .map(|output| String::from_utf8_lossy(&output.stdout).contains("Pengu Loader.exe"))
+        .unwrap_or(false)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn loader_is_running() -> bool {
+    false
+}
+
+#[cfg(target_os = "windows")]
+fn launch_loader(executable: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SHOW_WINDOW_CMD;
+
+    let file: Vec<u16> = executable.as_os_str().encode_wide().chain(Some(0)).collect();
+    let verb: Vec<u16> = "runas".encode_utf16().chain(Some(0)).collect();
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            PCWSTR(verb.as_ptr()),
+            PCWSTR(file.as_ptr()),
+            PCWSTR::null(),
+            PCWSTR::null(),
+            SHOW_WINDOW_CMD(1),
+        )
+    };
+    if result.0 as usize <= 32 {
+        return Err("Pengu Loader requires administrator approval. Start was cancelled or failed.".into());
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn launch_loader(executable: &std::path::Path) -> Result<(), String> {
+    Command::new(executable)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Failed to start Pengu Loader: {}", e))
 }
 
 pub fn copy_plugin_files(source: &std::path::Path, target: &std::path::Path) -> Result<(), String> {
