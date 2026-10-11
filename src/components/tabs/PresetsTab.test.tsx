@@ -6,6 +6,7 @@ import {
     SAVED_BIO_KEY,
     SAVED_ICON_KEY,
     SAVED_BACKGROUND_KEY,
+    SAVED_CUSTOM_BACKGROUND_KEY,
     SAVED_TOKENS_KEY,
     SAVED_TITLE_KEY
 } from '../../storageKeys';
@@ -149,6 +150,15 @@ describe('PresetsTab', () => {
             });
             expect(mockShowToast).toHaveBeenCalledWith('Preset "Classic Solo Queue" applied successfully!', 'success');
         });
+    });
+
+    it('removes an active GIF when loading a preset with a Riot background', async () => {
+        localStorage.setItem(SAVED_CUSTOM_BACKGROUND_KEY, '{"active":true,"fileName":"animated.gif"}');
+        render(<PresetsTab lcu={mockLcu} showToast={mockShowToast} addLog={mockAddLog} lcuRequest={mockLcuRequest} />);
+        await screen.findByText('Classic Solo Queue');
+        fireEvent.click(screen.getByText('LOAD'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('clear_custom_background'));
+        expect(localStorage.getItem(SAVED_CUSTOM_BACKGROUND_KEY)).toBeNull();
     });
 
     it('should not send title when preset title is -1', async () => {

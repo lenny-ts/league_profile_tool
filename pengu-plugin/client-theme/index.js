@@ -8,6 +8,12 @@ var STYLE_ID = 'lpt-client-theme'
 var started = false
 var activeCSS = null
 var roots = new Map()
+var PROFILE_GUARD = '\n/* LPT: keep the top-right identity/profile surface owned by League. */\n' +
+  '.identity, .identity-container, .identity-icon, .summoner-level, .lower-details, ' +
+  '.notifications-button, .style-profile-emblem-wrapper, .style-profile-emblem-content { ' +
+  'background-image: none !important; box-shadow: none !important; }\n' +
+  'html, body, .league-client, #rcp-fe-viewport-root, .rcp-fe-viewport-main { ' +
+  'background-image: none !important; }\n'
 
 function discoverRoots(node) {
   if (node.nodeType !== 1 && node.nodeType !== 9 && node.nodeType !== 11) return
@@ -21,7 +27,7 @@ function installRoot(root) {
   if (roots.has(root)) return
   var style = document.createElement('style')
   style.setAttribute('data-lpt-theme-style', '')
-  style.textContent = activeCSS
+   style.textContent = activeCSS + PROFILE_GUARD
   var observer = new MutationObserver(function(records) {
     records.forEach(function(record) { record.addedNodes.forEach(discoverRoots) })
   })
@@ -67,7 +73,7 @@ function applyTheme(theme) {
       entry.observer.disconnect(); entry.style.remove(); roots.delete(root)
       return
     }
-    if (entry.style.textContent !== activeCSS) entry.style.textContent = activeCSS
+    if (entry.style.textContent !== activeCSS + PROFILE_GUARD) entry.style.textContent = activeCSS + PROFILE_GUARD
     if (!entry.style.isConnected) (root === document ? document.head : root).appendChild(entry.style)
   })
   // Also discover roots attached to existing hosts since the last refresh.

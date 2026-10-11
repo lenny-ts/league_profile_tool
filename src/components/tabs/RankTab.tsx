@@ -404,7 +404,7 @@ const RankTab: React.FC<RankTabProps> = ({ lcu, showToast, addLog, lcuRequest })
                         <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--hextech-gold)', marginBottom: '6px' }}>1. Install PenguLoader</div>
                             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                                Go to <strong>Settings &gt; Pengu Loader</strong> and click <strong>Download Pengu Loader</strong> to install it.
+                                Open <strong>Settings &gt; Pengu Loader</strong> and click <strong>Install Pengu &amp; Plugins</strong>. The app downloads the official runtime automatically.
                             </p>
                         </div>
                         <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>

@@ -314,16 +314,16 @@ describe('SettingsTab', () => {
 
         it('should show install button with correct label when not installed', () => {
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Install Plugin')).toBeDefined();
-            expect(screen.queryByText('Reinstall Plugin')).toBeNull();
+            expect(screen.getByText('Install Pengu & Plugins')).toBeDefined();
+            expect(screen.queryByText('Update Plugins')).toBeNull();
             expect(screen.queryByText('✓ Plugin installed')).toBeNull();
         });
 
         it('should show reinstall button and status when plugin is installed', () => {
             localStorage.setItem('pengu_plugin_installed_v1', 'true');
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Reinstall Plugin')).toBeDefined();
-            expect(screen.queryByText('Install Plugin')).toBeNull();
+            expect(screen.getByText('Update Plugins')).toBeDefined();
+            expect(screen.queryByText('Install Pengu & Plugins')).toBeNull();
             expect(screen.getByText('✓ Plugin installed')).toBeDefined();
         });
 
@@ -332,7 +332,7 @@ describe('SettingsTab', () => {
             const showToast = vi.fn();
             render(<SettingsTab {...mockProps} showToast={showToast} />);
 
-            fireEvent.click(screen.getByText('Install Plugin'));
+            fireEvent.click(screen.getByText('Install Pengu & Plugins'));
             await waitFor(() => {
                 expect(mockInvoke).toHaveBeenCalledWith('install_pengu_plugin');
                 expect(showToast).toHaveBeenCalledWith('Plugin installed! Restart League Client.', 'success');
@@ -345,7 +345,7 @@ describe('SettingsTab', () => {
             const showToast = vi.fn();
             render(<SettingsTab {...mockProps} showToast={showToast} />);
 
-            fireEvent.click(screen.getByText('Install Plugin'));
+            fireEvent.click(screen.getByText('Install Pengu & Plugins'));
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Install failed: Error: Pengu Loader not found', 'error');
             });
@@ -373,18 +373,16 @@ describe('SettingsTab', () => {
             });
         });
 
-        it('should show manual installation instructions', () => {
+        it('should show automatic installation instructions', () => {
             render(<SettingsTab {...mockProps} />);
-            expect(screen.getByText('Manual Installation:')).toBeDefined();
-            expect(screen.getByText(/Copy the complete/)).toBeDefined();
-            expect(screen.getByText(/Pengu Loader\\plugins\\rank-override/)).toBeDefined();
+            expect(screen.getByText('Automatic setup:')).toBeDefined();
+            expect(screen.getByText(/official runtime and LPT plugins/)).toBeDefined();
+            expect(screen.getByText(/League Profile Tool\\Pengu Loader/)).toBeDefined();
         });
 
-        it('should show download link', () => {
+        it('should not require an external download link', () => {
             render(<SettingsTab {...mockProps} />);
-            const link = screen.getByText('Download Pengu Loader').closest('a');
-            expect(link).toHaveAttribute('href', 'https://github.com/PenguLoader/PenguLoader/releases');
-            expect(link).toHaveAttribute('target', '_blank');
+            expect(screen.queryByText('Download Pengu Loader')).toBeNull();
         });
     });
 

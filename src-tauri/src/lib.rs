@@ -1,4 +1,5 @@
 mod lcu;
+mod pengu;
 mod themes;
 use themes::{list_library_themes, save_library_theme, delete_library_theme};
 use themes::{save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme};
@@ -252,20 +253,10 @@ fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn install_pengu_plugin() -> Result<String, String> {
+async fn install_pengu_plugin(app: tauri::AppHandle) -> Result<String, String> {
+    let loader_root = pengu::ensure_loader(&app).await?;
+    let plugins_dir = loader_root.join("plugins");
     // Try common Pengu Loader installation paths
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-    
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found. Please install Pengu Loader first.")?;
-    
     // v1.1.6 doesn't support @author/ folders, use simple folder name
     let target_dir = plugins_dir.join("rank-override");
     
@@ -284,20 +275,23 @@ fn install_pengu_plugin() -> Result<String, String> {
         include_str!("../../pengu-plugin/rank-override/modules/rankOverride.js")
     ).map_err(|e| format!("Failed to write rankOverride.js: {}", e))?;
     
-    Ok(format!("Plugin installed to: {}", target_dir.display()))
+    pengu::ensure_running(&loader_root)?;
+    Ok(format!("Plugin installed and Pengu Loader started: {}", target_dir.display()))
 }
 
-fn pengu_rank_override_dirs() -> Result<Vec<PathBuf>, String> {
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-    let plugins_dir = possible_paths.iter()
-        .find(|path| path.exists())
-        .ok_or("Pengu Loader not found. Please install Pengu Loader first.")?;
+#[tauri::command]
+fn ensure_pengu_running(app: tauri::AppHandle) -> Result<bool, String> {
+    let loader_root = pengu::root(&app)?;
+    if !loader_root.join("plugins").is_dir() {
+        return Ok(false);
+    }
+    pengu::ensure_running(&loader_root)?;
+    Ok(true)
+}
+
+fn pengu_rank_override_dirs(app: &tauri::AppHandle) -> Result<Vec<PathBuf>, String> {
+    let plugins_dir = pengu::plugins_dir(app)?;
+    if !plugins_dir.exists() { return Err("Pengu Loader is not installed yet".into()); }
     Ok(vec![
         plugins_dir.join("rank-override"),
         plugins_dir.join("@default").join("rank-override"),
@@ -306,7 +300,7 @@ fn pengu_rank_override_dirs() -> Result<Vec<PathBuf>, String> {
 }
 
 #[tauri::command]
-fn save_custom_background(source_path: Option<String>, fit: String, position: String, dim: u8) -> Result<String, String> {
+fn save_custom_background(app: tauri::AppHandle, source_path: Option<String>, fit: String, position: String, dim: u8) -> Result<String, String> {
     let fit = match fit.as_str() {
         "cover" | "contain" => fit,
         _ => return Err("Invalid background fit".to_string()),
@@ -315,7 +309,7 @@ fn save_custom_background(source_path: Option<String>, fit: String, position: St
         "center" | "top" | "bottom" | "left" | "right" => position,
         _ => return Err("Invalid background position".to_string()),
     };
-    let target_dir = pengu_rank_override_dirs()?.into_iter()
+    let target_dir = pengu_rank_override_dirs(&app)?.into_iter()
         .find(|path| path.exists())
         .ok_or("Rank Override plugin not installed")?;
     let assets_dir = target_dir.join("assets");
@@ -396,9 +390,9 @@ fn read_custom_background_preview(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn clear_custom_background() -> Result<String, String> {
+fn clear_custom_background(app: tauri::AppHandle) -> Result<String, String> {
     let mut cleared = false;
-    for target_dir in pengu_rank_override_dirs()? {
+    for target_dir in pengu_rank_override_dirs(&app)? {
         if !target_dir.exists() { continue; }
         for extension in ["png", "jpg", "jpeg", "webp", "gif"] {
             let asset = target_dir.join("assets").join(format!("custom-background.{}", extension));
@@ -414,6 +408,7 @@ fn clear_custom_background() -> Result<String, String> {
 
 #[tauri::command]
 fn save_rank_config(
+    app: tauri::AppHandle,
     tier: String,
     division: String,
     queue: String,
@@ -436,17 +431,7 @@ fn save_rank_config(
     clash_banner_level: u32,
     overview_enabled: bool,
 ) -> Result<String, String> {
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found")?;
+    let plugins_dir = pengu::plugins_dir(&app)?;
 
     // Write to all possible plugin locations
     let locations = vec![
@@ -501,24 +486,14 @@ fn save_rank_config(
 }
 
 #[tauri::command]
-fn open_pengu_plugins_folder() -> Result<String, String> {
-    let possible_paths = [
-        PathBuf::from("C:\\Program Files\\Pengu Loader\\plugins"),
-        PathBuf::from("C:\\Program Files (x86)\\Pengu Loader\\plugins"),
-        dirs::document_dir()
-            .map(|d| d.join("Pengu Loader").join("plugins"))
-            .unwrap_or_default(),
-    ];
-    
-    let plugins_dir = possible_paths.iter()
-        .find(|p| p.exists())
-        .ok_or("Pengu Loader not found. Please install Pengu Loader first.")?;
+fn open_pengu_plugins_folder(app: tauri::AppHandle) -> Result<String, String> {
+    let plugins_dir = pengu::plugins_dir(&app)?;
     
     // Open the folder in explorer
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("explorer")
-            .arg(plugins_dir)
+            .arg(&plugins_dir)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
     }
@@ -593,7 +568,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
+        .invoke_handler(tauri::generate_handler![get_lcu_connection, update_bio, set_minimize_to_tray, get_minimize_to_tray, lcu_request, save_logs_to_path, force_quit, load_presets, save_presets, read_text_file, install_pengu_plugin, ensure_pengu_running, list_library_themes, save_library_theme, delete_library_theme, save_client_theme, get_client_theme, read_client_theme_css, clear_client_theme, open_pengu_plugins_folder, save_rank_config, save_custom_background, read_custom_background_preview, clear_custom_background])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_, _| {});

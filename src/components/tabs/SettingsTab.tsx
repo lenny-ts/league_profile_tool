@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, ExternalLink, AppWindow } from 'lucide-react';
+import { RefreshCw, Cpu, Trash2, X, Check, Download, Upload, Puzzle, FolderOpen, AppWindow } from 'lucide-react';
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -406,7 +406,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                     <div className="ui-section-header__copy">
                         <h3 className="ui-section-header__title">Pengu Loader Integration</h3>
-                        <p className="ui-section-header__description">Required to display custom ranks in the League profile overview.</p>
+                    <p className="ui-section-header__description">Managed automatically for themes, backgrounds and profile enhancements.</p>
                     </div>
                     <span className="ui-section-header__actions" style={{ padding: '4px 9px', borderRadius: '999px', background: pluginInstalled ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: pluginInstalled ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)', color: pluginInstalled ? '#22c55e' : '#f59e0b', fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         {pluginInstalled ? 'PLUGIN READY' : 'SETUP REQUIRED'}
@@ -414,7 +414,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
                 <p className="settings-desc" style={{ margin: '0 0 14px', lineHeight: 1.5 }}>
                     Install the Rank Override plugin to show custom ranks in the League client's profile overview.
-                    Requires <a href="https://github.com/PenguLoader/PenguLoader" target="_blank" rel="noreferrer" style={{ color: 'var(--hextech-gold)' }}>Pengu Loader</a> to be installed.
+                    The first setup downloads the official MIT-licensed package into the app data folder and preserves your plugins and settings.
                     {pluginInstalled && (
                         <span style={{ color: '#22c55e', marginLeft: '8px' }}>✓ Plugin installed</span>
                     )}
@@ -438,7 +438,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                             }
                         }}
                     >
-                        <Puzzle size={16} /> {pluginInstalled ? 'Reinstall Plugin' : 'Install Plugin'}
+                        <Puzzle size={16} /> {pluginInstalled ? 'Update Plugins' : 'Install Pengu & Plugins'}
                     </button>
                     
                     <button 
@@ -458,21 +458,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                         <FolderOpen size={16} /> Open Plugins Folder
                     </button>
                     
-                    <a 
-                        href="https://github.com/PenguLoader/PenguLoader/releases" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="ghost-btn"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 15px', textDecoration: 'none' }}
-                    >
-                        <ExternalLink size={16} /> Download Pengu Loader
-                    </a>
                 </div>
                 
                 <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(0,0,0,0.22)', border: '1px solid var(--glass-border)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-                    <strong style={{ color: 'var(--hextech-gold)' }}>Manual Installation:</strong><br />
-                    Copy the complete <code>rank-override</code> folder to <code>C:\Program Files\Pengu Loader\plugins\rank-override\</code>.<br />
-                    Restart the League Client and enable <strong>Profile Overview</strong> from the Rank tab.
+                    <strong style={{ color: 'var(--hextech-gold)' }}>Automatic setup:</strong><br />
+                    The official runtime and LPT plugins are placed under <code>%LOCALAPPDATA%\League Profile Tool\Pengu Loader</code>.<br />
+                    Restart the League Client after the first install or plugin update.
                 </div>
             </div>
 

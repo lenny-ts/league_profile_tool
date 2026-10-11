@@ -30,3 +30,5 @@ reqwest = { version = "0.12.12", features = ["json", "rustls-tls"] }
 base64 = "0.23.1"
 sysinfo = "0.39.3"
 dirs = "5"
+zip = "2.4"
+windows = { version = "0.61", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

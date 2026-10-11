@@ -34,9 +34,29 @@ A desktop tool built with **Tauri v2** and **React** for League of Legends profi
 
 ![League Profile Tool Demo](res/img/demo.png)
 
+## 🎬 Interactive Demos
+
+Watch the real recordings on the project site: **[league-profile-tool site](https://lenny-ts.github.io/league_profile_tool/#showcase)**.
+
+Each feature has a short demo that you can start directly from the page:
+
+| Demo | Direct link |
+|---|---|
+| Client Themes | [`docs/media/theme.mp4`](docs/media/theme.mp4) |
+| Profile Background | [`docs/media/background.mp4`](docs/media/background.mp4) |
+| Overview Cards | [`docs/media/overview.mp4`](docs/media/overview.mp4) |
+| Rank Override | [`docs/media/rank.mp4`](docs/media/rank.mp4) |
+| Challenge Level | [`docs/media/challenges.mp4`](docs/media/challenges.mp4) |
+| Icon Swapper | [`docs/media/icon.mp4`](docs/media/icon.mp4) |
+| Profile Tokens | [`docs/media/tokens.mp4`](docs/media/tokens.mp4) |
+| Profile Bio | [`docs/media/bio.mp4`](docs/media/bio.mp4) |
+| Music Auto Bio | [`docs/media/music.mp4`](docs/media/music.mp4) |
+| Friend Manager | [`docs/media/friends.mp4`](docs/media/friends.mp4) |
+| Lobby Manager | [`docs/media/lobby.mp4`](docs/media/lobby.mp4) |
+
 <p align="center">
   <a href="https://www.youtube.com/watch?v=zd6FKj8uvA4">
-    <strong>🎥 Click here to watch the full video demo</strong>
+    <strong>🎥 Or watch the full video demo on YouTube</strong>
     <br>
     <img src="https://img.youtube.com/vi/zd6FKj8uvA4/maxresdefault.jpg" alt="Watch the video" width="100%">
   </a>
@@ -47,6 +67,7 @@ A desktop tool built with **Tauri v2** and **React** for League of Legends profi
 | 🚀 Start Here | 🔗 Link |
 |---|---|
 | Latest Release | [GitHub Releases](https://github.com/lenny-ts/league_profile_tool/releases) |
+| Interactive Demos | [Site showcase](https://lenny-ts.github.io/league_profile_tool/#showcase) |
 | CI Workflows | [GitHub Actions](https://github.com/lenny-ts/league_profile_tool/actions) |
 | Security Report | [`res/docs/SECURITY_REPORT.md`](res/docs/SECURITY_REPORT.md) |
 
@@ -79,12 +100,17 @@ A desktop tool built with **Tauri v2** and **React** for League of Legends profi
 
 Chat and social rank overrides work directly through the LCU. Overriding the rank shown in the League **Profile Overview** additionally requires [PenguLoader](https://github.com/PenguLoader/PenguLoader):
 
-1. Install PenguLoader from its official releases page.
-2. Open **Settings > Pengu Loader** in League Profile Tool.
-3. Select **Install / Update Plugin**.
-4. Enable **PenguLoader Overview Override** in the Rank Override section, apply the changes, and fully restart League.
+1. Open **Settings > Pengu Loader** in League Profile Tool.
+2. Select **Install Pengu & Plugins**. The app downloads and manages the official PenguLoader runtime automatically.
+3. Enable **PenguLoader Overview Override** in the Rank Override section, apply the changes, and fully restart League.
 
 The Overview toggle is independent: disabling it does not affect chat or social hover cards.
+
+### Pengu Loader attribution
+
+League Profile Tool downloads and manages the official [Pengu Loader](https://github.com/PenguLoader/PenguLoader)
+runtime under the user's local app data directory. Pengu Loader is MIT licensed; its own license and notices remain
+with the managed runtime. The tool does not bundle or redistribute any injection DLL.
 
 ## 🛠️ Development
 

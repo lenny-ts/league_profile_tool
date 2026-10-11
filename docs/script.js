@@ -3,6 +3,33 @@
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // An explicit Play works with mouse, keyboard and touch. Pause off-screen demos.
+  const videoObserver = new IntersectionObserver(entries => {
+    entries.forEach(({ target, isIntersecting }) => {
+      if (!isIntersecting) target.pause();
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.show-video').forEach(video => {
+    const frame = document.createElement('div');
+    frame.className = 'video-frame';
+    video.parentNode.insertBefore(frame, video);
+    frame.appendChild(video);
+
+    const playButton = document.createElement('button');
+    playButton.type = 'button';
+    playButton.className = 'video-play-button';
+    playButton.setAttribute('aria-label', video.getAttribute('aria-label').replace('Video demo:', 'Play demo:'));
+    playButton.textContent = '▶  Watch demo';
+    playButton.addEventListener('click', () => video.play().then(() => video.focus()).catch(() => {}));
+    video.addEventListener('play', () => { playButton.hidden = true; });
+    video.addEventListener('pause', () => { playButton.hidden = false; });
+    frame.appendChild(playButton);
+    videoObserver.observe(video);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) document.querySelectorAll('.show-video').forEach(video => video.pause());
+  });
+
   // Mobile nav
   const burger = document.getElementById('navBurger');
   const navMobile = document.getElementById('navMobile');

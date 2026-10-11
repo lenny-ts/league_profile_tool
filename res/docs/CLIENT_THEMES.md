@@ -6,10 +6,11 @@ No Rose code is used. JavaScript themes and archive packages are not supported.
 
 ## 1. Install and test the plugin
 
-Install Pengu Loader from https://github.com/PenguLoader/PenguLoader and enable
-it following its instructions. In LPT, open **Client Themes**, enter CSS and
-click **Apply Theme**. This installs the plugin and writes its configuration.
-Restart League after installation or plugin upgrades. With the plugin loaded, later
+Open **Client Themes**, enter CSS and click **Apply Theme**. LPT downloads the
+official MIT-licensed Pengu Loader package on first use, stores it under
+`%LOCALAPPDATA%\League Profile Tool\Pengu Loader`, installs the plugin and writes
+its configuration. Existing Program Files/Documents installations are migrated
+automatically. Restart League after installation or plugin upgrades. With the plugin loaded, later
 edits and Disable are picked up within five seconds while League is running.
 The status in LPT describes saved configuration, not a confirmed client connection.
 
@@ -66,10 +67,10 @@ selectors and any external resource dependencies in a comment at the top.
 Share the CSS file with installation instructions. There is one applied theme
 at a time. **Default Themes** includes:
 
-- **Arcane — Fractured**: Arcane Fractured Jinx splash, cyan/pink accents,
-  dark glass panels and floating light motes.
-- **Star Guardian — Ahri**: Star Guardian Ahri splash, pearl pink/lilac accents,
-  luminous navigation and magical-girl styling.
+- **Obsidian Atelier**: Kindred artwork, neutral charcoal glass, brass highlights,
+  geometric motion and an editorial UI hierarchy.
+- **Rosewater Atelier**: Seraphine artwork, rosewood and champagne accents with
+  plum glass, soft corners and gentle animated highlights.
 
 Splash artwork belongs to Riot Games and loads from CommunityDragon. Network
 access is required; offline, the theme retains its base color and panel styles.

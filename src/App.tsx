@@ -112,6 +112,12 @@ function App() {
         setIsAutostartEnabled(autostart);
         setMinimizeToTray(tray);
 
+        invoke<boolean>("ensure_pengu_running")
+          .then((started) => {
+            if (started) addLog("Pengu Loader started automatically.");
+          })
+          .catch((err) => addLog(`Pengu Loader startup failed: ${err}`));
+
         fetch('https://api.github.com/repos/lenny-ts/league_profile_tool/releases/latest', {
           signal: controller.signal
         })

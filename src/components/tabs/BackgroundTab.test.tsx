@@ -157,6 +157,8 @@ describe('BackgroundTab', () => {
     });
 
     it('should apply background when a skin is selected and clicked', async () => {
+        const scrollIntoView = vi.fn();
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView });
         const props = createProps();
         render(<BackgroundTab {...props} />);
 
@@ -171,12 +173,44 @@ describe('BackgroundTab', () => {
 
         // Click Apply
         const applyBtn = screen.getByText(/APPLY — Justicar Aatrox/i);
+        const skinGrid = document.querySelector('.bg-skin-grid')!;
+        expect(skinGrid.compareDocumentPosition(applyBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' }));
         fireEvent.click(applyBtn);
 
         await waitFor(() => {
             expect(props.lcuRequest).toHaveBeenCalledWith('POST', expect.anything(), expect.objectContaining({ value: 1001 }));
             expect(props.showToast).toHaveBeenCalledWith(expect.stringContaining('Justicar Aatrox'), 'success');
         });
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+    });
+
+    it('replaces an active GIF when applying a Riot skin', async () => {
+        localStorage.setItem('profile_saved_custom_background_v1', JSON.stringify({ active: true, fileName: 'animated.gif' }));
+        const props = createProps();
+        render(<BackgroundTab {...props} />);
+        fireEvent.change(screen.getByPlaceholderText(/name or ID/i), { target: { value: '12345' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('clear_custom_background'));
+        expect(localStorage.getItem('profile_saved_custom_background_v1')).toBeNull();
+        expect(localStorage.getItem('profile_saved_background_v1')).toBe('12345');
+        fireEvent.click(screen.getByRole('tab', { name: 'Custom / GIF' }));
+        expect(screen.queryByText('ACTIVE')).toBeNull();
+    });
+
+    it('keeps the GIF active if the Riot skin fails to apply', async () => {
+        localStorage.setItem('profile_saved_custom_background_v1', JSON.stringify({ active: true, fileName: 'animated.gif' }));
+        const props = createProps();
+        props.lcuRequest.mockImplementation((method: string) => method === 'GET'
+            ? Promise.resolve({ backgroundSkinId: 0 }) : Promise.reject(new Error('LCU offline')));
+        render(<BackgroundTab {...props} />);
+        fireEvent.change(screen.getByPlaceholderText(/name or ID/i), { target: { value: '12345' } });
+        fireEvent.click(screen.getByText('APPLY'));
+
+        await waitFor(() => expect(props.showToast).toHaveBeenCalledWith('Failed to set background', 'error'));
+        expect(mockInvoke).not.toHaveBeenCalledWith('clear_custom_background');
+        expect(localStorage.getItem('profile_saved_custom_background_v1')).not.toBeNull();
     });
 
     it('should handle direct skin ID input', async () => {

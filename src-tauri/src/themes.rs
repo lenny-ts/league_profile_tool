@@ -2,6 +2,7 @@ use std::{fs, io::Read, path::{Path, PathBuf}, sync::Mutex};
 use serde_json::{json, Value};
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
+use crate::pengu;
 
 #[derive(Serialize, Deserialize)]
 pub struct LibraryTheme {
@@ -63,15 +64,8 @@ pub fn delete_library_theme(app: tauri::AppHandle, id: String) -> Result<(), Str
 
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
-fn theme_dir() -> Result<PathBuf, String> {
-    let paths = [
-        Some(PathBuf::from(r"C:\Program Files\Pengu Loader\plugins")),
-        Some(PathBuf::from(r"C:\Program Files (x86)\Pengu Loader\plugins")),
-        dirs::document_dir().map(|dir| dir.join("Pengu Loader/plugins")),
-    ];
-    paths.into_iter().flatten().find(|path| path.is_dir())
-        .map(|path| path.join("client-theme"))
-        .ok_or_else(|| "Pengu Loader not found. Install Pengu Loader first.".into())
+fn theme_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    Ok(pengu::plugins_dir(app)?.join("client-theme"))
 }
 
 // Basic format checks, not a CSS sandbox. Imported styles must be trusted.
@@ -101,8 +95,8 @@ pub fn read_client_theme_css(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn get_client_theme() -> Result<Option<Value>, String> {
-    let Ok(dir) = theme_dir() else { return Ok(None); };
+pub fn get_client_theme(app: tauri::AppHandle) -> Result<Option<Value>, String> {
+    let dir = theme_dir(&app)?;
     let path = dir.join("theme.json");
     if !path.exists() { return Ok(None); }
     let text = fs::read_to_string(path).map_err(|e| e.to_string())?;
@@ -117,13 +111,13 @@ fn write_config(dir: &Path, config: &Value) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn save_client_theme(name: String, css: String, enabled: bool) -> Result<String, String> {
+pub async fn save_client_theme(app: tauri::AppHandle, name: String, css: String, enabled: bool) -> Result<String, String> {
     validate_css(&css)?;
     if name.trim().is_empty() || name.chars().count() > 80 {
         return Err("Theme name must contain 1–80 characters".into());
     }
+    let dir = pengu::ensure_loader(&app).await?.join("plugins/client-theme");
     let _guard = WRITE_LOCK.lock().map_err(|e| e.to_string())?;
-    let dir = theme_dir()?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     fs::write(dir.join("index.js"), include_str!("../../pengu-plugin/client-theme/index.js"))
         .map_err(|e| e.to_string())?;
@@ -132,9 +126,9 @@ pub fn save_client_theme(name: String, css: String, enabled: bool) -> Result<Str
 }
 
 #[tauri::command]
-pub fn clear_client_theme() -> Result<(), String> {
+pub fn clear_client_theme(app: tauri::AppHandle) -> Result<(), String> {
     let _guard = WRITE_LOCK.lock().map_err(|e| e.to_string())?;
-    let dir = theme_dir()?;
+    let dir = theme_dir(&app)?;
     if dir.exists() { write_config(&dir, &json!({"enabled": false}))?; }
     Ok(())
 }

@@ -26,6 +26,7 @@
       <div class="nav-links" id="navLinks">
         <a href="#features">Features</a>
         <a href="#showcase">Showcase</a>
+        <a href="#media">Media</a>
         <a href="https://discord.gg/G3M4X3B" target="_blank" rel="noopener">Discord</a>
       </div>
       <div class="nav-right">
@@ -36,6 +37,7 @@
       <div class="nav-mobile" id="navMobile">
         <a href="#features">Features</a>
         <a href="#showcase">Showcase</a>
+        <a href="#media">Media</a>
         <a href="https://discord.gg/G3M4X3B" target="_blank" rel="noopener">Discord</a>
         <a href="https://github.com/lenny-ts/league_profile_tool" target="_blank" rel="noopener">GitHub</a>
         <a href="https://ko-fi.com/profumato" target="_blank" rel="noopener">Ko-fi</a>
@@ -53,10 +55,10 @@
     <div class="hero-inner">
       <div class="hero-badge">
         <span class="pulse"></span>
-        v1.13.0 — Free &amp; Open Source
+         v2.0.0 — Free &amp; Open Source
       </div>
       <h1>Your LoL Profile.<br/>Finally <span class="hl">Yours</span>.</h1>
-      <p class="hero-sub">Stop looking like everyone else. Use animated backgrounds, rebuild your Overview cards, override rank and challenges, and take full creative control. No hacks. No risk. Just your style.</p>
+       <p class="hero-sub">Make the League Client yours. Choose an Atelier theme, animate your profile background, rebuild Overview cards, and let LPT install and launch Pengu Loader for you.</p>
       <div class="hero-cta">
         <a href="https://github.com/lenny-ts/league_profile_tool/releases" class="btn btn-big" target="_blank" rel="noopener">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -82,7 +84,7 @@
     </div>
     <div class="hero-visual">
       <div class="hero-screenshot">
-        <img src="../res/img/demo.png" alt="League Profile Tool interface" />
+        <img src="media/app.png" alt="League Profile Tool interface" />
         <div class="screenshot-glow"></div>
       </div>
     </div>
@@ -96,7 +98,7 @@
         <div class="proof-stat-label">Free Forever</div>
       </div>
       <div class="proof-stat">
-        <div class="proof-stat-num">v1.13</div>
+         <div class="proof-stat-num">v2.0</div>
         <div class="proof-stat-label">Latest Release</div>
       </div>
       <div class="proof-stat">
@@ -124,6 +126,13 @@
           </div>
           <h3>Custom Backgrounds</h3>
           <p>Use any Riot splash, local image, or animated GIF. Auto-fit, position, and darken it without recompression.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 5h14v12H4z" stroke="currentColor" stroke-width="1.7"/><path d="M7 8h8M7 11h5M7 14h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Atelier Client Themes</h3>
+          <p>Start with Obsidian Atelier or Rosewater Atelier. One representative image, animated surfaces, themed profile sidebar, and direct one-click apply.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon fi-gold">
@@ -193,81 +202,21 @@
       <div class="show-text">
         <span class="label">Profile Bio &amp; Status</span>
         <h2>Your words.<br/>Your vibe.</h2>
-        <p>Write your bio with live character count. Auto-expanding textarea that grows with your text. Two modes: normal bio or Music Sync idle text as bio.</p>
+        <p>Write a persistent bio, use your Music Sync idle text, and set your chat availability in the same place. Enforce Offline keeps your status hidden during Champ Select.</p>
         <ul class="show-list">
-          <li>Live character count</li>
-          <li>Auto-expanding textarea</li>
-          <li>Music Sync idle text as bio toggle</li>
-          <li>Bio persisted across sessions</li>
-        </ul>
-      </div>
-      <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Bio editor demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. STATUS -->
-    <div class="show-row showcase-status">
-      <div class="show-text">
-        <span class="label">Status</span>
-        <h2>Online, Away,<br/>or Ghost Mode.</h2>
-        <p>Set your LCU chat availability to Online, Away, Mobile, or Offline. Enforce Offline keeps you hidden even during Champ Select.</p>
-        <ul class="show-list">
-          <li>Online / Away / Mobile / Offline</li>
+          <li>Live character count and auto-expanding editor</li>
+          <li>Online, Away, Mobile, or Offline status</li>
           <li>Enforce Offline during Champ Select</li>
-          <li>Applied via PUT /lol-chat/v1/me</li>
-          <li>Persisted across sessions</li>
+          <li>Music Sync idle text as bio toggle</li>
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Status editor demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/bio.jpg" aria-label="Video demo: Profile Bio and Status"><source src="media/bio.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
-    <!-- 3. MUSIC SYNC IDLE TEXT AS BIO -->
-    <div class="show-row reverse showcase-music-bio">
-      <div class="show-text">
-        <span class="label">Use Music Sync Idle Text as Bio</span>
-        <h2>Your bio,<br/>on autopilot.</h2>
-        <p>Toggle this in Profile Bio &amp; Status to use your Music Sync idle text as your bio. When Music Sync is active, it controls your bio automatically. When idle, your custom fallback text shows instead.</p>
-        <ul class="show-list">
-          <li>Toggle in Profile Bio &amp; Status tab</li>
-          <li>Music Sync controls bio when active</li>
-          <li>Idle text fallback when no music</li>
-          <li>Warning banner when Music Sync is active</li>
-        </ul>
-      </div>
-      <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Music sync idle text demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. BACKGROUND -->
-    <div class="show-row showcase-background">
+    <!-- BACKGROUND -->
+    <div class="show-row showcase-background" id="background">
       <div class="show-text">
         <span class="label">Profile Background</span>
         <h2>Any image.<br/>Even animated.</h2>
@@ -280,20 +229,55 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Background picker demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/background.jpg" aria-label="Video demo: Profile Background"><source src="media/background.mp4" type="video/mp4" />Your browser does not support video.</video>
+      </div>
+    </div>
+
+    <!-- CLIENT THEMES -->
+    <div class="show-row reverse showcase-themes" id="themes">
+      <div class="show-text">
+        <span class="label">Client Themes</span>
+        <h2>One image.<br/>A whole atmosphere.</h2>
+        <p>Choose an Atelier preset and apply it directly from the card. Obsidian Atelier is neutral and architectural; Rosewater Atelier is soft, editorial, and feminine. Both animate the client background, profile area, and friend list without covering the Profile Overview.</p>
+        <ul class="show-list">
+          <li>Obsidian Atelier and Rosewater Atelier</li>
+          <li>One representative splash per theme</li>
+          <li>Animated background drift and sidebar motion</li>
+          <li>Edit CSS or apply instantly from the preset card</li>
+        </ul>
+      </div>
+      <div class="show-visual theme-showcase-visual">
+        <div class="theme-demo-window">
+          <div class="theme-demo-bar"><span class="theme-demo-dot"></span><span>CLIENT THEMES / LIVE PREVIEW</span><span class="theme-demo-status">APPLIED</span></div>
+          <video class="show-video" controls muted loop playsinline preload="none" poster="media/theme.jpg" aria-label="Video demo: Atelier Client Themes"><source src="media/theme.mp4" type="video/mp4" />Your browser does not support video.</video>
+          <div class="theme-demo-caption"><strong>Obsidian Atelier</strong><span>One image. A whole atmosphere.</span><div class="theme-demo-swatches"><i></i><i></i><i></i><i></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGED PENGU -->
+    <div class="show-row showcase-pengu-managed">
+      <div class="show-text">
+        <span class="label">Managed Pengu Loader</span>
+        <h2>No manual loader<br/>setup.</h2>
+        <p>LPT downloads the official Pengu Loader runtime, installs the LPT plugins, requests the required Windows permission, and starts Pengu automatically when needed.</p>
+        <ul class="show-list">
+          <li>Official MIT-licensed runtime download</li>
+          <li>Automatic plugin install and updates</li>
+          <li>UAC-aware automatic launch</li>
+          <li>Persistent local runtime under AppData</li>
+        </ul>
+      </div>
+      <div class="show-visual pengu-showcase-visual">
+        <div class="pengu-official-card">
+          <img src="https://pengu.lol/banner.jpg" alt="Pengu Loader official penguin banner" loading="lazy" />
+          <div class="pengu-official-caption"><img class="pengu-official-mark" src="https://pengu.lol/icon.png" alt="" /><span><strong>Pengu Loader</strong><small>The runtime behind LPT themes and plugins.</small></span><a href="https://pengu.lol" target="_blank" rel="noopener">Official site ↗</a></div>
         </div>
       </div>
     </div>
 
     <!-- OVERVIEW CARDS -->
-    <div class="show-row reverse showcase-overview">
+    <div class="show-row reverse showcase-overview" id="overview">
       <div class="show-text">
         <span class="label">Overview Cards</span>
         <h2>Rebuild your<br/>profile overview.</h2>
@@ -306,15 +290,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Overview cards customization demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/overview.jpg" aria-label="Video demo: Overview Cards"><source src="media/overview.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -332,15 +308,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Icon swapper demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/icon.jpg" aria-label="Video demo: Icon Swapper"><source src="media/icon.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -358,15 +326,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Friend manager demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/friends.jpg" aria-label="Video demo: Friend List Manager"><source src="media/friends.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -384,15 +344,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Challenge tokens demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/tokens.jpg" aria-label="Video demo: Profile Tokens"><source src="media/tokens.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -411,13 +363,7 @@
       </div>
       <div class="show-visual">
         <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Profile presets demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
+          <img class="show-screenshot" src="media/presets.png" alt="Profile Presets: a saved preset card with icon, availability and preview" loading="lazy" />
         </div>
       </div>
     </div>
@@ -436,15 +382,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Music sync demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/music.jpg" aria-label="Video demo: Music Auto Bio"><source src="media/music.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -462,45 +400,11 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Rank override demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/rank.jpg" aria-label="Video demo: Rank Override"><source src="media/rank.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
-    <!-- 11. RANK OVERRIDE + PENGU LOADER -->
-    <div class="show-row reverse showcase-pengu">
-      <div class="show-text">
-        <span class="label">Rank Override + PenguLoader</span>
-        <h2>Beyond chat.<br/>Into the profile.</h2>
-        <p>One-click PenguLoader integration powers custom backgrounds, Overview Cards, and complete rank presentation inside the League profile.</p>
-        <ul class="show-list">
-          <li>Animated and local profile backgrounds</li>
-          <li>Rank, Mastery, Honor, and Clash overrides</li>
-          <li>3-step setup guide in-app</li>
-          <li>One-click plugin install/update</li>
-        </ul>
-      </div>
-      <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Rank override with PenguLoader demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 12. CHALLENGE LEVEL -->
+    <!-- CHALLENGE LEVEL -->
     <div class="show-row showcase-challenge">
       <div class="show-text">
         <span class="label">Challenge Level</span>
@@ -514,15 +418,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Challenge level demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/challenges.jpg" aria-label="Video demo: Challenge Level"><source src="media/challenges.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -540,15 +436,7 @@
         </ul>
       </div>
       <div class="show-visual">
-        <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Lobby manager demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
-        </div>
+        <video class="show-video" controls muted loop playsinline preload="none" poster="media/lobby.jpg" aria-label="Video demo: Lobby Manager"><source src="media/lobby.mp4" type="video/mp4" />Your browser does not support video.</video>
       </div>
     </div>
 
@@ -567,13 +455,7 @@
       </div>
       <div class="show-visual">
         <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="System log demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
+          <img class="show-screenshot" src="media/logs.png" alt="System Logs: counters, search, filters and recent activity" loading="lazy" />
         </div>
       </div>
     </div>
@@ -593,17 +475,25 @@
       </div>
       <div class="show-visual">
         <div class="visual-placeholder">
-          <img src="../res/img/demo.png" alt="Settings demo" />
-          <div class="play-overlay">
-            <div class="play-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-            </div>
-            <span>Replace with GIF</span>
-          </div>
+          <img class="show-screenshot" src="media/settings.png" alt="Settings: Auto-Restore Profile, Backup and Restore, and Pengu Loader Integration" loading="lazy" />
         </div>
       </div>
     </div>
 
+  </section>
+
+  <!-- ===== MEDIA ===== -->
+  <section class="media-kit" id="media">
+    <div class="media-kit-inner">
+      <span class="label">Watch It In Action</span>
+      <h2>Short clips.<br/><span class="dim">Clear proof.</span></h2>
+      <p class="media-kit-intro">Real recordings of the tool. Press Play to watch a demo; use the video controls to pause or replay.</p>
+      <div class="media-kit-grid">
+        <a class="media-kit-card" href="#themes"><span class="media-duration">THEMES</span><h3>Atelier in action</h3><p>See the theme picker and the client appearance.</p><span class="media-kit-link">Watch demo →</span></a>
+        <a class="media-kit-card" href="#background"><span class="media-duration">BACKGROUND</span><h3>Choose a new background</h3><p>Browse skins and update the profile background.</p><span class="media-kit-link">Watch demo →</span></a>
+        <a class="media-kit-card" href="#overview"><span class="media-duration">OVERVIEW</span><h3>Profile overview</h3><p>See rank, mastery and regalia on the client profile.</p><span class="media-kit-link">Watch demo →</span></a>
+      </div>
+    </div>
   </section>
 
   <!-- ===== HOW IT WORKS ===== -->
@@ -623,7 +513,7 @@
         <div class="how-step">
           <div class="step-num">02</div>
           <h3>Open League</h3>
-          <p>Start the tool while League is running. Auto-connects.</p>
+          <p>Start the tool while League is running. LPT connects and launches managed Pengu when needed.</p>
         </div>
         <div class="how-step-arrow" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -645,7 +535,7 @@
       <div class="cta-actions">
         <a href="https://github.com/lenny-ts/league_profile_tool/releases" class="btn btn-big" target="_blank" rel="noopener">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Download v1.13.0
+           Download v2.0.0
         </a>
         <a href="https://github.com/lenny-ts/league_profile_tool" class="btn btn-ghost" target="_blank" rel="noopener">
           GitHub

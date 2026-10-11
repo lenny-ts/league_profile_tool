@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-09-13
+## [2.0.0] - 2026-09-17
+
+### Added
+- **Atelier Client Themes**: Obsidian Atelier and Rosewater Atelier presets with a single representative splash, animated page backgrounds, themed navigation, friend list, and profile sidebar, applied directly from the preset card.
+- **Managed Pengu Loader runtime**: The app migrates an existing Pengu installation or downloads the official MIT-licensed v1.1.6 package automatically, then installs and updates LPT plugins under `%LOCALAPPDATA%`.
+- **Automatic Pengu start**: Pengu Loader launches on app start and after plugin setup through the Windows elevation prompt.
+
+### Fixed
+- **Custom background conflicts**: Applying a Riot skin or a preset with a Riot background now removes an active custom GIF, and keeps the GIF when the skin change fails.
+- **Profile area protection**: Themes no longer cover the top-right identity block or the Profile Overview background.
+- **Background picker**: The apply button stays below the skin grid and scrolls into view when a skin is selected.
+
+### Tests
+- 201 frontend and plugin tests, 1 Rust test, and a website media check pass.
 
 ### Added
 - **Custom profile backgrounds**: Install static or animated PNG, JPG, WEBP, and GIF backgrounds through the bundled PenguLoader integration.

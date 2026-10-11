@@ -4,6 +4,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { LcuInfo } from '../../hooks/useLcu';
 import { PENGU_PLUGIN_INSTALLED_KEY, SAVED_BACKGROUND_KEY, SAVED_CUSTOM_BACKGROUND_KEY } from '../../storageKeys';
 import { patchChatLol } from '../../utils/chatMe';
+import { disableCustomBackground } from '../../utils/disableCustomBackground';
 import { Search, Image, Loader2, Hash, Upload, Trash2, Film } from 'lucide-react';
 import supplementalSkins from '../../data/supplemental-skins.json';
 
@@ -152,6 +153,7 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     const [allSkinsLoaded, setAllSkinsLoaded] = useState(false);
     const skinCacheRef = useRef<Map<number, SkinEntry[]>>(new Map());
     const skinGridRef = useRef<HTMLDivElement>(null);
+    const applySkinButtonRef = useRef<HTMLButtonElement>(null);
     const allSkinsRef = useRef<SkinSearchEntry[]>([]);
     const searchRef = useRef<HTMLDivElement>(null);
 
@@ -287,6 +289,14 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
         if (skinGridRef.current) skinGridRef.current.scrollTop = 0;
     }, [selectedChampion]);
 
+    useEffect(() => {
+        if (!selectedSkin) return;
+        applySkinButtonRef.current?.scrollIntoView?.({
+            behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+            block: 'nearest',
+        });
+    }, [selectedSkin]);
+
     const filteredChampions = champSearch.trim()
         ? champions.filter(c =>
             c.name.toLowerCase().includes(champSearch.toLowerCase()) ||
@@ -325,15 +335,13 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
     const applyBackground = async (skinId: number, skinName: string) => {
         if (!lcu) return;
         setLoading(true);
+        let applied = false;
         try {
             await lcuRequest('POST', '/lol-summoner/v1/current-summoner/summoner-profile', {
                 key: 'backgroundSkinId',
                 value: skinId,
             });
-            localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
-            showToast(`Background set to ${skinName}!`, 'success');
-            addLog(`Profile background updated: ${skinName} (ID: ${skinId})`);
-            setCurrentBgId(skinId);
+            applied = true;
         } catch (err) {
             addLog(`Official background update failed (${err}). Trying force method...`);
             try {
@@ -341,17 +349,29 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                     ...current,
                     backgroundSkinId: skinId.toString()
                 }));
-                
-                localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
-                showToast(`Background forced to ${skinName}!`, 'success');
-                addLog(`Profile background forced: ${skinName} (ID: ${skinId})`);
-                setCurrentBgId(skinId);
+                applied = true;
             } catch (forceErr) {
                 const msg = forceErr instanceof Error ? forceErr.message : String(forceErr);
                 showToast('Failed to set background', 'error');
                 addLog(`Background update failed: ${msg}`);
             }
         } finally {
+            if (applied) {
+                localStorage.setItem(SAVED_BACKGROUND_KEY, skinId.toString());
+                setCurrentBgId(skinId);
+                try {
+                    await disableCustomBackground();
+                    setCustomActive(false);
+                    setCustomPreview('');
+                    setCustomFileName('');
+                    setCustomSourcePath('');
+                    showToast(`Background set to ${skinName}!`, 'success');
+                    addLog(`Profile background updated: ${skinName} (ID: ${skinId})`);
+                } catch (err) {
+                    showToast('Skin saved, but the custom background could not be removed.', 'error');
+                    addLog(`Failed to remove custom background: ${err}`);
+                }
+            }
             setLoading(false);
         }
     };
@@ -625,6 +645,7 @@ const BackgroundTab: React.FC<BackgroundTabProps> = ({ lcu, showToast, addLog, l
                         <button type="button"
                             className="primary-btn"
                             id="apply-background-btn"
+                            ref={applySkinButtonRef}
                             onClick={() => selectedSkin && applyBackground(selectedSkin.id, selectedSkin.name)}
                             disabled={!lcu || loading || !selectedSkin}
                             style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '0.8rem' }}

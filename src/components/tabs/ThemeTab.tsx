@@ -45,6 +45,7 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
     const [libraryReady, setLibraryReady] = useState(false);
     const [libraryError, setLibraryError] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const editorRef = React.useRef<HTMLElement>(null);
     const [query, setQuery] = useState('');
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -59,6 +60,11 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
     const selectTheme = (item: ThemeState, id: string | null = null) => {
         setTheme({ name: item.name, css: item.css });
         setSelectedId(id);
+    };
+
+    const editTheme = (item: ThemeState, id: string | null = null) => {
+        selectTheme(item, id);
+        editorRef.current?.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
     };
 
     const storeTheme = async (item: ThemeState, id: string = crypto.randomUUID()) => {
@@ -107,15 +113,15 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
         }
     }, [theme]);
 
-    const saveTheme = async () => {
+    const saveTheme = async (item: ThemeState = theme) => {
         setSaving(true);
         try {
             const result = await invoke<string>('save_client_theme', {
-                name: theme.name,
-                css: theme.css,
+                name: item.name,
+                css: item.css,
                 enabled: true,
             });
-            setApplied({ name: theme.name, css: theme.css });
+            setApplied({ name: item.name, css: item.css });
             addLog(result);
             showToast?.('Theme saved. Restart League after plugin installation or update.', 'success');
         } catch (error) {
@@ -124,6 +130,11 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const applyPreset = async (item: ThemeState) => {
+        selectTheme(item);
+        await saveTheme(item);
     };
 
     const importTheme = async () => {
@@ -176,23 +187,36 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
             <div className="ui-page-header">
                 <div className="ui-page-header__copy">
                     <h2 className="ui-page-header__title">Client Themes</h2>
-                    <p className="ui-page-header__description">Create a CSS theme for your League Client and apply it through Pengu Loader.</p>
+                    <p className="ui-page-header__description">Choose an Atelier look for your League Client, or make your own with CSS.</p>
                 </div>
-                <span className={`theme-status-badge ${applied ? 'active' : ''}`}>
-                    {applied ? 'ENABLED IN CONFIG' : 'NOT ENABLED'}
-                </span>
+                <div className="ui-page-header__actions">
+                    <span role="status" className={`theme-status-badge ${applied ? 'active' : ''}`}>
+                        {applied ? `ACTIVE: ${applied.name}` : 'NO THEME ACTIVE'}
+                    </span>
+                    {applied && <button type="button" className="ghost-btn" onClick={resetTheme} disabled={saving}><RotateCcw size={15} /> Disable Theme</button>}
+                </div>
             </div>
 
             <section className="card ui-panel" aria-labelledby="theme-presets-title">
-                <h3 id="theme-presets-title">Default Themes</h3>
-                <p className="theme-guide-note">Champion splash artwork, coordinated panels and motion. Theme backgrounds take priority over Profile Background while enabled. Artwork loads from CommunityDragon (© Riot Games).</p>
-                <div className="theme-library-grid">
-                    {BUILTIN_THEMES.map(item => <button key={item.id} type="button" className="theme-library-card" disabled={saving} onClick={() => selectTheme(item)} aria-pressed={theme.css === item.css}>
-                        <img className="theme-artwork" src={item.image} alt="" />
-                        <span className="theme-swatches" aria-hidden="true">{item.colors.map(color => <span key={color} style={{ backgroundColor: color }} />)}</span>
-                        <strong>{item.name}</strong>
-                        <p className="theme-guide-note">{item.description}</p>
-                    </button>)}
+                <h3 id="theme-presets-title">Atelier Themes</h3>
+                <p className="theme-guide-note">Pick a look below. The wallpaper, navigation and social panel change together; Profile Overview keeps its own background.</p>
+                <div className="theme-library-grid theme-preset-grid">
+                    {BUILTIN_THEMES.map(item => {
+                        const inUse = applied?.name === item.name && applied.css === item.css;
+                        const selected = theme.name === item.name && theme.css === item.css;
+                        return <article key={item.id} className={`theme-library-card theme-preset-card ${selected ? 'is-selected' : ''}`} style={{ '--theme-bg': item.colors[0], '--theme-accent': item.colors[2] } as React.CSSProperties}>
+                            <div className="theme-preset-scene" aria-hidden="true">
+                                <img src={item.image} alt="" loading="lazy" />
+                            </div>
+                            <div className="theme-preset-info"><strong className="theme-card-title">{item.name}</strong>{inUse && <span className="theme-preset-badge">IN USE</span>}</div>
+                            <p className="theme-guide-note">{item.description}</p>
+                            <span className="theme-swatches" aria-hidden="true">{item.colors.map(color => <span key={color} style={{ backgroundColor: color }} />)}</span>
+                            <div className="theme-card-actions">
+                                <button type="button" className="ghost-btn" disabled={saving} onClick={() => editTheme(item)} aria-pressed={selected}>Customize</button>
+                                <button type="button" className="ghost-btn theme-primary-action" disabled={saving || inUse} onClick={() => applyPreset(item)}>{inUse ? 'Applied' : 'Use Theme'}</button>
+                            </div>
+                        </article>;
+                    })}
                 </div>
             </section>
             <section className="card ui-panel" aria-labelledby="my-themes-title">
@@ -210,7 +234,7 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
                 {library.length > 0 && !library.some(item => item.name.toLowerCase().includes(query.toLowerCase())) && <p>No matching themes.</p>}
                 <div className="theme-library-grid theme-personal-list">
                     {library.filter(item => item.name.toLowerCase().includes(query.toLowerCase())).map(item => <article className="theme-library-card" key={item.id}>
-                        <button type="button" className="ghost-btn" disabled={saving} aria-pressed={selectedId === item.id} onClick={() => selectTheme(item, item.id)}>{item.name}</button>
+                        <button type="button" className="ghost-btn" disabled={saving} aria-pressed={selectedId === item.id} onClick={() => editTheme(item, item.id)}>{item.name}</button>
                         <button type="button" className="ghost-btn" disabled={saving} aria-label={`Delete ${item.name}`} onClick={() => setDeleteId(item.id)}>Delete</button>
                     </article>)}
                 </div>
@@ -221,7 +245,7 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
                 </div>}
             </section>
             <div className="theme-editor-grid">
-                <section className="card ui-panel">
+                <section className="card ui-panel" ref={editorRef}>
                     <div className="ui-section-header">
                         <div className="ui-section-header__icon"><Palette size={16} /></div>
                         <div className="ui-section-header__copy">
@@ -238,8 +262,7 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
                         <button type="button" className="ghost-btn" onClick={() => saveToLibrary()} disabled={saving || !libraryReady}>{selectedId ? 'Update Saved Theme' : 'Save to My Themes'}</button>
                         {selectedId && <button type="button" className="ghost-btn" onClick={() => saveToLibrary(true)} disabled={saving}>Save as Copy</button>}
                         <button type="button" className="ghost-btn" onClick={() => exportFile()}><Download size={15} /> Export CSS</button>
-                        <button type="button" className="ghost-btn theme-primary-action" onClick={saveTheme} disabled={saving}><Check size={15} /> {saving ? 'Applying...' : 'Apply Theme'}</button>
-                        <button type="button" className="ghost-btn" onClick={resetTheme} disabled={saving}><RotateCcw size={15} /> Disable</button>
+                        <button type="button" className="ghost-btn theme-primary-action" onClick={() => saveTheme()} disabled={saving}><Check size={15} /> {saving ? 'Applying...' : 'Apply Theme'}</button>
                     </div>
                     {applied && <p className="theme-guide-note">Saved theme: {applied.name}.{applied.css !== theme.css || applied.name !== theme.name ? ' Draft changes are not applied yet.' : ''}</p>}
                     <p className="theme-guide-note">Requires Pengu Loader. Restart League after installing or updating the plugin; subsequent CSS changes refresh within 5 seconds. Import CSS from authors you trust; styles can load remote resources.</p>
@@ -263,7 +286,7 @@ const ThemeTab: React.FC<ThemeTabProps> = ({ addLog, showToast }) => {
                     <button type="button" className="ghost-btn" onClick={() => exportFile(true)}><BookOpen size={15} /> Download full guide</button>
                     <h3>CSS preview (sample page)</h3>
                     <p className="theme-guide-note">This isolated sample is not the League Client. Verify real selectors in League.</p>
-                    <iframe title="Theme CSS sample preview" sandbox="" className="theme-preview" srcDoc={`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https://raw.communitydragon.org"><style>body{margin:0;min-height:390px;box-sizing:border-box;background:#091428;color:#f0e6d2;font:14px/1.5 sans-serif;padding:24px}nav{display:flex;gap:24px;padding:14px;margin-bottom:38px}.some-client-panel{padding:16px;border:1px solid #c8aa6e;max-width:190px}h2{font-size:24px;margin:0 0 10px}small{letter-spacing:.14em}input{box-sizing:border-box;padding:8px;width:100%;border:1px solid;margin-top:12px}</style><style>${theme.css.replace(/</g, '\\3c ')}</style></head><body><nav class="rcp-fe-lol-navigation"><span class="navigation-tab active">HOME</span><span class="navigation-tab">PROFILE</span><span class="navigation-tab">COLLECTION</span></nav><section class="some-client-panel"><small>YOUR NEXT CHAPTER</small><h2>Welcome home</h2><p>Your champion.<br>Your client.</p><label>Find a friend<input type="search" placeholder="Search…"></label></section></body></html>`} />
+                    <iframe title="Theme CSS sample preview" sandbox="" className="theme-preview" srcDoc={`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https://raw.communitydragon.org https://ddragon.leagueoflegends.com"><style>body{margin:0;min-height:390px;box-sizing:border-box;background:#091428;color:#f0e6d2;font:14px/1.5 sans-serif;padding:24px}nav{display:flex;gap:24px;padding:14px;margin-bottom:38px}.some-client-panel{padding:16px;border:1px solid #c8aa6e;max-width:190px}h2{font-size:24px;margin:0 0 10px}small{letter-spacing:.14em}input{box-sizing:border-box;padding:8px;width:100%;border:1px solid;margin-top:12px}</style><style>${theme.css.replace(/</g, '\\3c ')}</style></head><body class="rcp-fe-lol-home"><nav class="rcp-fe-lol-navigation"><span class="navigation-tab active">HOME</span><span class="navigation-tab">PROFILE</span><span class="navigation-tab">COLLECTION</span></nav><section class="some-client-panel"><small>YOUR NEXT CHAPTER</small><h2>Welcome home</h2><p>Your champion.<br>Your client.</p><label>Find a friend<input type="search" placeholder="Search…"></label></section></body></html>`} />
                 </section>
             </div>
         </div>

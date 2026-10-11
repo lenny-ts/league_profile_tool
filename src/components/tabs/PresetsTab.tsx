@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { LcuInfo } from '../../hooks/useLcu';
 import { Save, FolderOpen, Trash2, CheckCircle2 } from 'lucide-react';
 import { patchChatLol, LcuRequestFn } from '../../utils/chatMe';
+import { disableCustomBackground } from '../../utils/disableCustomBackground';
 import {
     SAVED_AVAILABILITY_KEY,
     SAVED_BIO_KEY,
@@ -189,13 +190,11 @@ const PresetsTab: React.FC<PresetsTabProps> = ({ lcu, showToast, addLog, lcuRequ
             localStorage.removeItem(SAVED_BACKGROUND_KEY);
             return true;
         }
-        localStorage.setItem(SAVED_BACKGROUND_KEY, backgroundId);
         try {
             await lcuRequest('POST', '/lol-summoner/v1/current-summoner/summoner-profile', {
                 key: 'backgroundSkinId',
                 value: Number.parseInt(backgroundId, 10)
             });
-            return true;
         } catch (err) {
             addLog(`Official background update failed (${err}). Trying force method...`);
             try {
@@ -203,12 +202,19 @@ const PresetsTab: React.FC<PresetsTabProps> = ({ lcu, showToast, addLog, lcuRequ
                     ...current,
                     backgroundSkinId: backgroundId,
                 }));
-                return true;
             } catch (forceErr) {
                 addLog(`Failed to apply background from preset (Force): ${forceErr}`);
                 return false;
             }
         }
+        localStorage.setItem(SAVED_BACKGROUND_KEY, backgroundId);
+        try {
+            await disableCustomBackground();
+        } catch (err) {
+            addLog(`Preset skin saved, but custom background could not be removed: ${err}`);
+            return false;
+        }
+        return true;
     };
 
     const applyPresetTokensAndTitle = async (
