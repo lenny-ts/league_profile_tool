@@ -16,10 +16,6 @@ A desktop tool built with **Tauri v2** and **React** for League of Legends profi
   <img src="https://img.shields.io/github/actions/workflow/status/lenny-ts/league_profile_tool/virustotal-report.yml?style=flat-square&logo=virustotal&logoColor=white&label=VirusTotal&color=0b65d8&cacheSeconds=0" alt="VirusTotal"/>
 </a>
 
-<a href="https://sonarcloud.io/summary/new_code?id=lenny-ts_league_profile_tool">
-  <img src="https://img.shields.io/badge/Code%20Quality-SonarCloud-F3702A?style=flat-square&logo=sonarcloud&logoColor=white&cacheSeconds=0" alt="Code Quality"/>
-</a>
-
 <a href="https://github.com/lenny-ts/league_profile_tool/releases">
   <img src="https://img.shields.io/endpoint?url=https://downloadsbadge.duckdns.org/downloads&style=flat-square" alt="Downloads"/>
 </a>
@@ -140,7 +136,6 @@ npm run tauri build
 This project uses automated checks and public reporting:
 
 - **CodeQL** for static security analysis
-- **SonarCloud** for quality and hotspot analysis
 - **Dependabot** for dependency updates
 - **VirusTotal release report** generated in CI and published at [`res/docs/SECURITY_REPORT.md`](res/docs/SECURITY_REPORT.md)
 
