@@ -5,6 +5,7 @@ on:
     tags:
       - 'v*'
       - '[0-9]*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -39,9 +40,9 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest"
-            args: ""
+            args: "| *.sig"
           - platform: "windows-latest"
-            args: ""
+            args: "| *.sig"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -148,6 +149,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+          includeUpdaterJson: false
 
       - name: Remove Windows signing material
         if: always() && matrix.platform == 'windows-latest'
@@ -180,16 +182,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ env.RELEASE_TOKEN }}
         run: |
+          set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ steps.version.outputs.tag }}"
-          
-          # Download Windows signature
-          curl -L -o windows.sig \
-            "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_${VERSION}_x64-setup.exe.sig"
-          
-          # Download macOS signature (same for both architectures)
-          curl -L -o macos.sig \
-            "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_aarch64.app.tar.gz.sig"
+          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+
+          # -f makes a missing signature a hard failure instead of silently
+          # writing a 404 page into updater.json.
+          curl -fL -o windows.sig "${BASE}/League-Profile-Tool_${VERSION}_x64-setup.exe.sig"
+          curl -fL -o macos.sig "${BASE}/League-Profile-Tool_${VERSION}_aarch64.app.tar.gz.sig"
 
       - name: Update updater.json with signatures
         run: |
@@ -217,13 +218,9 @@ jobs:
                       "signature": "${WIN_SIG}",
                       "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_${VERSION}_x64-setup.exe"
                   },
-                  "darwin-x86_64": {
-                      "signature": "${MAC_SIG}",
-                      "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_aarch64.app.tar.gz"
-                  },
                   "darwin-aarch64": {
                       "signature": "${MAC_SIG}",
-                      "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_aarch64.app.tar.gz"
+                      "url": "https://github.com/${{ github.repository }}/releases/download/${TAG}/League-Profile-Tool_${VERSION}_aarch64.app.tar.gz"
                   }
               }
           }
