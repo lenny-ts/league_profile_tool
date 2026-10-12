@@ -30,7 +30,7 @@ reqwest = { version = "0.12.12", features = ["json", "rustls-tls"] }
 base64 = "0.23.1"
 sysinfo = "0.39.3"
 dirs = "6"
-zip = "2.4"
+zip = "4.6"
 
 # Only Pengu's Windows elevation path needs it; it must not be compiled on macOS.
 [target.'cfg(windows)'.dependencies]
